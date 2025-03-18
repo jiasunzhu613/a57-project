@@ -21,7 +21,7 @@ CO <- read_excel("./data/CO.xlsx", skip = 4)
 NO2 <- read_excel("./data/NO2.xlsx", skip = 4)
 NOX <- read_excel("./data/NOX.xlsx", skip = 3)
 O3 <- read_excel("./data/O3.xlsx", skip = 3)
-PM25 <- read_excel("./data/PM25.xlsx", skip = 6)
+PM25 <- read_excel("./data/PM25.xlsx", skip = 5)
 SO2 <- read_excel("./data/SO2.xlsx", , skip = 7)
 TRS <- read_excel("./data/TRS.xlsx", skip = 3)
 ```
