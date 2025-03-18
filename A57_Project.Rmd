@@ -17,12 +17,24 @@ library(readxl)
 
 Load Datasets
 ```{r}
-CO <- read_excel("./data/CO.xlsx")
-NO2 <- read_excel("./data/NO2.xlsx")
-NOX <- read_excel("./data/NOX.xlsx")
-O3 <- read_excel("./data/O3.xlsx")
-PM25 <- read_excel("./data/PM25.xlsx")
-SO2 <- read_excel("./data/SO2.xlsx")
-TRS <- read_excel("./data/TRS.xlsx")
+CO <- read_excel("./data/CO.xlsx", skip = 4)
+NO2 <- read_excel("./data/NO2.xlsx", skip = 4)
+NOX <- read_excel("./data/NOX.xlsx", skip = 3)
+O3 <- read_excel("./data/O3.xlsx", skip = 3)
+PM25 <- read_excel("./data/PM25.xlsx", skip = 6)
+SO2 <- read_excel("./data/SO2.xlsx", , skip = 7)
+TRS <- read_excel("./data/TRS.xlsx", skip = 3)
+```
+
+Head of Data
+```{r}
+head(CO)
+head(NO2)
+head(NOX)
+head(PM25)
+head(SO2)
+head(TRS)
+
+
 ```
 
