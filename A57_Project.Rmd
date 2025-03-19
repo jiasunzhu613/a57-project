@@ -18,6 +18,7 @@ library(tidyverse)
 library(readxl)
 library(lubridate)
 library(ggplot2)
+library(lubridate)
 ```
 
 Load Datasets
@@ -31,38 +32,55 @@ SO2 <- read_excel("./data/SO2.xlsx", , skip = 7)
 TRS <- read_excel("./data/TRS.xlsx", skip = 3)
 ```
 
-Head of Data
+Fix typing
 ```{r}
-head(CO)
-head(NO2)
-head(NOX)
-head(PM25)
-head(SO2)
-head(TRS)
-
-
+CO = CO %>% mutate(Mean = as.numeric(Mean)) 
+NO2 = NO2 %>% mutate(Mean = as.numeric(Mean)) 
+NOX = NOX %>% mutate(Mean = as.numeric(Mean))
+O3 = O3 %>% mutate(Mean = as.numeric(Mean))
+PM25 = PM25 %>% mutate(Mean = as.numeric(Mean)) %>% mutate(Year = as.integer(Year))
+SO2 = SO2 %>% mutate(Mean = as.numeric(Mean))
+TRS = TRS %>% mutate(Mean = as.numeric(Mean))
 ```
 
+Head of Data
 ```{r}
-CO = CO %>% mutate(Year = as.integer(Year), .before = Year) %>% 
-NO2 = NO2 %>% mutate(Year = as.integer(Year), .before = Year)
+glimpse(CO)
+glimpse(NO2)
+glimpse(NOX)
+glimpse(PM25)
+glimpse(SO2)
+glimpse(TRS)
+```
+
+NA imputing (TODO: decide what to do with this later)
+```{r}
+CO = na.omit(CO)
+NO2 = na.omit(NO2)
+NOX = na.omit(NOX)
+PM25 = na.omit(PM25)
+SO2 = na.omit(SO2)
+TRS = na.omit(TRS)
 ```
 
 
 Visualizing
 ```{r}
 x = left_join(CO, NO2, by = join_by("Year", "City"), suffix = c(".CO", ".NO2"))
-x = left_join(x, NOX, by = year)
-x = left_join(x, PM25)
-x = left_join(x, SO2)
+#x = left_join(x, NOX, by = year)
+#x = left_join(x, PM25)
+#x = left_join(x, SO2)
 
 
 ```
 
 
 ```{r}
-ggplot(x, aes(x = Year, y = as.double(Mean.CO), col = City)) + geom_point() 
-
+ggplot(NO2, aes(x = Year, y = Mean, col = City)) + geom_point() 
+ggplot(NOX, aes(x = Year, y = Mean, col = City)) + geom_point() 
+ggplot(PM25, aes(x = Year, y = Mean, col = City)) + geom_point() 
+ggplot(SO2, aes(x = Year, y = Mean, col = City)) + geom_point() 
+ggplot(TRS, aes(x = Year, y = Mean, col = City)) + geom_point() 
 
 ```
 
