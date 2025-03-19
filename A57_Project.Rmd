@@ -9,10 +9,15 @@ output: html_document
 knitr::opts_chunk$set(echo = TRUE)
 ```
 
+
+
+
 Load Dependencies
 ```{r}
 library(tidyverse)
 library(readxl)
+library(lubridate)
+library(ggplot2)
 ```
 
 Load Datasets
@@ -37,4 +42,31 @@ head(TRS)
 
 
 ```
+
+```{r}
+CO = CO %>% mutate(Year = as.integer(Year), .before = Year) %>% 
+NO2 = NO2 %>% mutate(Year = as.integer(Year), .before = Year)
+```
+
+
+Visualizing
+```{r}
+x = left_join(CO, NO2, by = join_by("Year", "City"), suffix = c(".CO", ".NO2"))
+x = left_join(x, NOX, by = year)
+x = left_join(x, PM25)
+x = left_join(x, SO2)
+
+
+```
+
+
+```{r}
+ggplot(x, aes(x = Year, y = as.double(Mean.CO), col = City)) + geom_point() 
+
+
+```
+
+
+
+
 
