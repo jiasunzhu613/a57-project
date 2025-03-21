@@ -23,52 +23,40 @@ library(lubridate)
 
 Load Datasets
 ```{r}
-CO <- read_excel("./data/CO.xlsx", skip = 4)
-NO2 <- read_excel("./data/NO2.xlsx", skip = 4)
 NOX <- read_excel("./data/NOX.xlsx", skip = 3)
 O3 <- read_excel("./data/O3.xlsx", skip = 3)
 PM25 <- read_excel("./data/PM25.xlsx", skip = 5)
 SO2 <- read_excel("./data/SO2.xlsx", , skip = 7)
-TRS <- read_excel("./data/TRS.xlsx", skip = 3)
 ```
 
 Fix typing
 ```{r, echo=FALSE}
-CO = CO %>% mutate(Mean = as.numeric(Mean)) 
-NO2 = NO2 %>% mutate(Mean = as.numeric(Mean)) 
 NOX = NOX %>% mutate(Mean = as.numeric(Mean))
 O3 = O3 %>% mutate(Mean = as.numeric(Mean))
 PM25 = PM25 %>% mutate(Mean = as.numeric(Mean)) %>% mutate(Year = as.integer(Year))
 SO2 = SO2 %>% mutate(Mean = as.numeric(Mean))
-TRS = TRS %>% mutate(Mean = as.numeric(Mean))
 view(PM25)
 ```
 
 NA imputing (TODO: decide what to do with this later)
 ```{r}
-CO = CO %>% drop_na(Mean)
-NO2 = NO2 %>% drop_na(Mean)
 O3 = O3 %>% drop_na(Mean)
 NOX = NOX %>% drop_na(Mean)
 PM25 = PM25 %>% drop_na(Mean)
 SO2 = SO2 %>% drop_na(Mean)
-TRS = TRS %>% drop_na(Mean)
 ```
 
 Head of Data
 ```{r}
-glimpse(CO)
-glimpse(NO2)
 glimpse(NOX)
 glimpse(PM25)
 glimpse(SO2)
-glimpse(TRS)
 ```
 
 
 Visualizing
 ```{r}
-x = left_join(CO, NO2, by = join_by("Year", "City"), suffix = c(".CO", ".NO2"))
+#x = left_join(CO, NO2, by = join_by("Year", "City"), suffix = c(".CO", ".NO2"))
 #x = left_join(x, NOX, by = year)
 #x = left_join(x, PM25)
 #x = left_join(x, SO2)
@@ -78,12 +66,10 @@ x = left_join(CO, NO2, by = join_by("Year", "City"), suffix = c(".CO", ".NO2"))
 
 
 ```{r}
-ggplot(NO2, aes(x = Year, y = Mean, col = City)) + geom_point() + theme(legend.position="none") 
 ggplot(NOX, aes(x = Year, y = Mean, col = City)) + geom_point() + theme(legend.position="none") 
 ggplot(O3, aes(x = Year, y = Mean, col = City)) + geom_point() + theme(legend.position="none") 
 ggplot(PM25, aes(x = Year, y = Mean, col = City)) + geom_point() + theme(legend.position="none")
 ggplot(SO2, aes(x = Year, y = Mean, col = City)) + geom_point() + theme(legend.position="none") 
-ggplot(TRS, aes(x = Year, y = Mean, col = City)) + geom_point() + theme(legend.position="none") 
 
 ```
 
