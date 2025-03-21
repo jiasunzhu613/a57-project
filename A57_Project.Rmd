@@ -19,6 +19,8 @@ library(readxl)
 library(lubridate)
 library(ggplot2)
 library(lubridate)
+library(knitr)
+library(stringr)
 ```
 
 Load Datasets
@@ -35,7 +37,7 @@ NOX = NOX %>% mutate(Mean = as.numeric(Mean))
 O3 = O3 %>% mutate(Mean = as.numeric(Mean))
 PM25 = PM25 %>% mutate(Mean = as.numeric(Mean)) %>% mutate(Year = as.integer(Year))
 SO2 = SO2 %>% mutate(Mean = as.numeric(Mean))
-view(PM25)
+#view(PM25)
 ```
 
 NA imputing (TODO: decide what to do with this later)
@@ -44,6 +46,38 @@ O3 = O3 %>% drop_na(Mean)
 NOX = NOX %>% drop_na(Mean)
 PM25 = PM25 %>% drop_na(Mean)
 SO2 = SO2 %>% drop_na(Mean)
+```
+
+Grouping similar regions
+```{r}
+excluded_cities = list(c("Chatham", "Sarnia"), 
+                       c("St. Catharines", "Brantford", "Kitchener"), 
+                       c("Hamilton Downtown", "Hamilton West"))
+
+group_cities <- function(data, exclude_cities){
+  grouped_data <- data %>%
+  filter(!City %in% exclude_cities) %>%  
+  # Exclude the cities from the dataset
+  bind_rows(
+    data %>%
+      # Get only the two cities we want, group their year rows, get their means and turn them into one row
+      filter(City %in% exclude_cities) %>%  
+      group_by(Year) %>%
+      # take mean of each column accross the row
+      summarise(across(where(is.numeric), ~mean(.x, na.rm = TRUE)), .groups = "drop") %>%
+      # fix the city name to be a combo of all cities
+      mutate(City = paste(exclude_cities, collapse = "-"))
+  )
+  return(grouped_data)
+}
+
+for(excluded_city in excluded_cities){
+  NOX <- group_cities(NOX, excluded_city)
+  O3 <- group_cities(O3, excluded_city)
+  PM25 <- group_cities(PM25, excluded_city)
+  SO2 <- group_cities(SO2, excluded_city)
+}
+
 ```
 
 Head of Data
@@ -70,6 +104,18 @@ ggplot(NOX, aes(x = Year, y = Mean, col = City)) + geom_point() + theme(legend.p
 ggplot(O3, aes(x = Year, y = Mean, col = City)) + geom_point() + theme(legend.position="none") 
 ggplot(PM25, aes(x = Year, y = Mean, col = City)) + geom_point() + theme(legend.position="none")
 ggplot(SO2, aes(x = Year, y = Mean, col = City)) + geom_point() + theme(legend.position="none") 
+
+```
+
+Tables
+```{r}
+# Make tables
+# Mean per years for that particulate matter
+NOX_Yearly_Mean = NOX %>% group_by(Year) %>% summarise("Mean NOX" = mean(Mean))
+# kable(NOX_Yearly_Mean)
+
+NOX_City_mean = NOX %>% group_by(City) %>% summarise("Mean NOX" = mean(Mean))
+# kable(NOX_City_mean)
 
 ```
 
