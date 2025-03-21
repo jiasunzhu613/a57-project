@@ -21,6 +21,7 @@ library(ggplot2)
 library(lubridate)
 library(knitr)
 library(stringr)
+library(tidygeocoder)
 ```
 
 Load Datasets
@@ -40,7 +41,7 @@ SO2 = SO2 %>% mutate(Mean = as.numeric(Mean))
 #view(PM25)
 ```
 
-NA imputing (TODO: decide what to do with this later)
+## NA imputing (TODO: decide what to do with this later)
 ```{r}
 O3 = O3 %>% drop_na(Mean)
 NOX = NOX %>% drop_na(Mean)
@@ -48,7 +49,7 @@ PM25 = PM25 %>% drop_na(Mean)
 SO2 = SO2 %>% drop_na(Mean)
 ```
 
-Grouping similar regions
+## Grouping similar regions
 ```{r}
 excluded_cities = list(c("Chatham", "Sarnia"), 
                        c("St. Catharines", "Brantford", "Kitchener"), 
@@ -77,8 +78,24 @@ for(excluded_city in excluded_cities){
   PM25 <- group_cities(PM25, excluded_city)
   SO2 <- group_cities(SO2, excluded_city)
 }
-
 ```
+
+## Map cities
+create a new data frame with city names, 
+```{r}
+#longlat = NOX %>% geocode(Location, method = 'osm', lat = latitude , long = longitude)
+#head(longlat)
+some_addresses <- tibble::tribble(
+~name,                  ~addr,
+"White House",          "467 University Ave. W., Windsor, Ontario",
+"Transamerica Pyramid", "College Ave. & South St., Windsor",     
+"Willis Tower",         "233 S Wacker Dr, Chicago, IL 60606"                                  
+)
+lat_longs <- some_addresses %>%
+  geocode(addr, method = 'osm', lat = latitude , long = longitude)
+lat_longs
+```
+
 
 Head of Data
 ```{r}
@@ -114,8 +131,4 @@ NOX_Yearly_Mean = NOX %>% group_by(Year) %>% summarise("Mean NOX" = mean(Mean))
 NOX_City_mean = NOX %>% group_by(City) %>% summarise("Mean NOX" = mean(Mean))
 # kable(NOX_City_mean)
 ```
-
-
-
-
 

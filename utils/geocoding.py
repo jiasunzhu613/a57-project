@@ -1,12 +1,17 @@
 import googlemaps
 import pandas as pd
 from datetime import datetime
+import dotenv
+import os
+
+dotenv.load_dotenv()
 
 file = input("Give me yo file name: ")
 skiprows = int(input("How many bad lines to skip: "))
 
+print("key", os.environ.get("GOOGLE_API_KEY"))
 df = pd.read_excel(f"../data/{file}.xlsx", skiprows=skiprows)
-gmaps = googlemaps.Client(key="AIzaSyAuKfWc9z1gsqQUXiPhNK8pvcRFHRr5OAs")
+gmaps = googlemaps.Client(key=os.environ.get("GOOGLE_API_KEY"))
 df.rename(columns=df.iloc[1])
 df["Latitude"] = 0
 df["Longitude"] = 0
