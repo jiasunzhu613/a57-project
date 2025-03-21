@@ -81,19 +81,13 @@ for(excluded_city in excluded_cities){
 ```
 
 ## Map cities
-create a new data frame with city names, 
 ```{r}
-#longlat = NOX %>% geocode(Location, method = 'osm', lat = latitude , long = longitude)
-#head(longlat)
-some_addresses <- tibble::tribble(
-~name,                  ~addr,
-"White House",          "467 University Ave. W., Windsor, Ontario",
-"Transamerica Pyramid", "College Ave. & South St., Windsor",     
-"Willis Tower",         "233 S Wacker Dr, Chicago, IL 60606"                                  
-)
-lat_longs <- some_addresses %>%
-  geocode(addr, method = 'osm', lat = latitude , long = longitude)
-lat_longs
+NOX_LL = read_excel("./data/NOX_LL.xlsx")
+NOX_LL = NOX_LL %>% filter(Longitude < -50)
+NOX_map = ggplot(NOX_LL, aes(Longitude, Latitude)) + 
+  geom_jitter(size=0.1) +
+  coord_quickmap()
+NOX_map
 ```
 
 
