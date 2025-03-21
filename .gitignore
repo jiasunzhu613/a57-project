@@ -1,3 +1,5 @@
-*.DS_Store
+.DS_Store
 A57_Project.html
 .Rproj.user
+.RData
+.Rhistory

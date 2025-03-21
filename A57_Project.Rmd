@@ -94,8 +94,6 @@ Visualizing
 #x = left_join(x, NOX, by = year)
 #x = left_join(x, PM25)
 #x = left_join(x, SO2)
-
-
 ```
 
 
@@ -104,7 +102,6 @@ ggplot(NOX, aes(x = Year, y = Mean, col = City)) + geom_point() + theme(legend.p
 ggplot(O3, aes(x = Year, y = Mean, col = City)) + geom_point() + theme(legend.position="none") 
 ggplot(PM25, aes(x = Year, y = Mean, col = City)) + geom_point() + theme(legend.position="none")
 ggplot(SO2, aes(x = Year, y = Mean, col = City)) + geom_point() + theme(legend.position="none") 
-
 ```
 
 Tables
@@ -116,7 +113,6 @@ NOX_Yearly_Mean = NOX %>% group_by(Year) %>% summarise("Mean NOX" = mean(Mean))
 
 NOX_City_mean = NOX %>% group_by(City) %>% summarise("Mean NOX" = mean(Mean))
 # kable(NOX_City_mean)
-
 ```
 
 
