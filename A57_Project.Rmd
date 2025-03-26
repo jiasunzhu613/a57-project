@@ -34,10 +34,10 @@ SO2 <- read_excel("./data/SO2.xlsx", , skip = 7)
 
 Fix typing
 ```{r, echo=FALSE}
-NOX = NOX %>% mutate(Mean = as.numeric(Mean))
-O3 = O3 %>% mutate(Mean = as.numeric(Mean))
-PM25 = PM25 %>% mutate(Mean = as.numeric(Mean)) %>% mutate(Year = as.integer(Year))
-SO2 = SO2 %>% mutate(Mean = as.numeric(Mean))
+NOX = NOX %>% mutate(Mean = as.numeric(Mean)) %>%  filter(Year >= 2003)
+O3 = O3 %>% mutate(Mean = as.numeric(Mean)) %>%  filter(Year >= 2003)
+PM25 = PM25 %>% mutate(Mean = as.numeric(Mean)) %>% mutate(Year = as.integer(Year)) %>%  filter(Year >= 2003)
+SO2 = SO2 %>% mutate(Mean = as.numeric(Mean)) %>%  filter(Year >= 2003)
 #view(PM25)
 ```
 
@@ -171,7 +171,7 @@ Graphing_Yearly_Means <- Combined_Yearly_Mean %>%
                pivot_longer(cols = starts_with("Mean"),
                names_to = "Pollutant",
                values_to = "Value")
-#kable(Graphing_Yearly_Means)
+kable(Graphing_Yearly_Means)
 ggplot(Graphing_Yearly_Means, 
        aes(x = Year, y = Value, 
            col = factor(Pollutant, 
@@ -181,7 +181,19 @@ ggplot(Graphing_Yearly_Means,
       labs(col = "Pollutants")
 ```
 
+## Paired T-test
+compare the value of two years (2003, 2022), x_2003, x_2022
+H_0: u_1 - u_2 = 0
+H_a: u_1 - u_2 != 0
 
+```{r}
+# find 2003, 2022
+values.2003 = NOX %>% filter(Year == 2003) %>% select(City, Mean)
+values.2022 = NOX %>% filter(Year == 2022) %>% select(City, Mean)
+values = left_join(values.2003, values.2022, by="City")
+values = values %>% mutate(diff = Mean.x - Mean.y)
+t.test(values$diff)
+```
 
 
 
