@@ -119,10 +119,71 @@ Tables
 ```{r}
 # Make tables
 # Mean per years for that particulate matter
-NOX_Yearly_Mean = NOX %>% group_by(Year) %>% summarise("Mean NOX" = mean(Mean))
-# kable(NOX_Yearly_Mean)
 
 NOX_City_mean = NOX %>% group_by(City) %>% summarise("Mean NOX" = mean(Mean))
+
 # kable(NOX_City_mean)
+
+SO2_City_mean = SO2 %>% group_by(City) %>% summarise("Mean SO2" = mean(Mean))
+O3_City_mean = O3 %>% group_by(City) %>% summarise("Mean O3" = mean(Mean))
+PM25_City_mean = PM25 %>% group_by(City) %>% summarise("Mean PM25" = mean(Mean))
+
 ```
+
+## Need To Decide What to do with the NAs, left_join? or smthn?
+```{r}
+# Making one big table of Pollutant by City 
+
+City_Means = list(NOX_City_mean, PM25_City_mean, SO2_City_mean, O3_City_mean)
+
+Combined_City_Mean = reduce(City_Means, full_join, by = "City")
+kable(Combined_City_Mean)
+
+```
+
+```{r}
+NOX_Yearly_Mean = NOX %>% group_by(Year) %>% summarise("Mean NOX" = mean(Mean))
+O3_Yearly_Mean = O3 %>% group_by(Year) %>% summarise("Mean O3" = mean(Mean))
+PM25_Yearly_Mean = PM25 %>% group_by(Year) %>% summarise("Mean PM25" = mean(Mean))
+SO2_Yearly_Mean = SO2 %>% group_by(Year) %>% summarise("Mean SO2" = mean(Mean))
+
+
+
+kable(NOX_Yearly_Mean)
+```
+
+
+
+## Same thing w NAs, we prob should na.rm when we use mean O-O
+```{r}
+# Making one big table of Pollutant by City 
+
+Yearly_Means = list(NOX_Yearly_Mean, PM25_Yearly_Mean, SO2_Yearly_Mean, O3_Yearly_Mean)
+
+Combined_Yearly_Mean = reduce(Yearly_Means, full_join, by = "Year")
+kable(Combined_Yearly_Mean)
+
+```
+
+
+```{r}
+Graphing_Yearly_Means <- Combined_Yearly_Mean %>% 
+               pivot_longer(cols = starts_with("Mean"),
+               names_to = "Pollutant",
+               values_to = "Value")
+#kable(Graphing_Yearly_Means)
+ggplot(Graphing_Yearly_Means, 
+       aes(x = Year, y = Value, 
+           col = factor(Pollutant, 
+                        levels = c("Mean NOX", "Mean O3", "Mean PM25", "Mean SO2"), 
+                        labels = c("NOX", "O3", "PM25", "SO2")))) + 
+      geom_point() +
+      labs(col = "Pollutants")
+```
+
+
+
+
+
+
 
