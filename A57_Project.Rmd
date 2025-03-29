@@ -12,8 +12,7 @@ knitr::opts_chunk$set(echo = TRUE)
 
 
 
-Load Dependencies
-```{r}
+```{r, include = FALSE}
 library(tidyverse)
 library(readxl)
 library(lubridate)
@@ -25,7 +24,7 @@ library(tidygeocoder)
 ```
 
 Load Datasets
-```{r}
+```{r, include = FALSE}
 NOX <- read_excel("./data/NOX.xlsx", skip = 3)
 O3 <- read_excel("./data/O3.xlsx", skip = 3)
 PM25 <- read_excel("./data/PM25.xlsx", skip = 5)
@@ -33,7 +32,7 @@ SO2 <- read_excel("./data/SO2.xlsx", , skip = 7)
 ```
 
 Fix typing
-```{r, echo=FALSE}
+```{r, include=FALSE}
 NOX = NOX %>% mutate(Mean = as.numeric(Mean)) %>%  filter(Year >= 2003)
 O3 = O3 %>% mutate(Mean = as.numeric(Mean)) %>%  filter(Year >= 2003)
 PM25 = PM25 %>% mutate(Mean = as.numeric(Mean)) %>% mutate(Year = as.integer(Year)) %>%  filter(Year >= 2003)
@@ -50,7 +49,7 @@ SO2 = SO2 %>% drop_na(Mean)
 ```
 
 ## Grouping similar regions
-```{r}
+```{r, include = F}
 excluded_cities = list(c("Chatham", "Sarnia"), 
                        c("St. Catharines", "Brantford", "Kitchener"), 
                        c("Hamilton Downtown", "Hamilton West"))
@@ -91,14 +90,6 @@ NOX_map
 ```
 
 
-Head of Data
-```{r}
-glimpse(NOX)
-glimpse(PM25)
-glimpse(SO2)
-```
-
-
 Visualizing
 ```{r}
 #x = left_join(CO, NO2, by = join_by("Year", "City"), suffix = c(".CO", ".NO2"))
@@ -109,7 +100,7 @@ Visualizing
 
 
 ```{r}
-ggplot(NOX, aes(x = Year, y = Mean, col = City)) + geom_point() + theme(legend.position="none") 
+ggplot(NOX, aes(x = Year, y = Mean, col = City)) + geom_line() + facet_wrap(~ City) + theme(legend.position="none") 
 ggplot(O3, aes(x = Year, y = Mean, col = City)) + geom_point() + theme(legend.position="none") 
 ggplot(PM25, aes(x = Year, y = Mean, col = City)) + geom_point() + theme(legend.position="none")
 ggplot(SO2, aes(x = Year, y = Mean, col = City)) + geom_point() + theme(legend.position="none") 
@@ -137,7 +128,7 @@ PM25_City_mean = PM25 %>% group_by(City) %>% summarise("Mean PM25" = mean(Mean))
 City_Means = list(NOX_City_mean, PM25_City_mean, SO2_City_mean, O3_City_mean)
 
 Combined_City_Mean = reduce(City_Means, full_join, by = "City")
-kable(Combined_City_Mean)
+head(kable(Combined_City_Mean))
 
 ```
 
@@ -149,7 +140,7 @@ SO2_Yearly_Mean = SO2 %>% group_by(Year) %>% summarise("Mean SO2" = mean(Mean))
 
 
 
-kable(NOX_Yearly_Mean)
+head(kable(NOX_Yearly_Mean))
 ```
 
 
@@ -161,7 +152,7 @@ kable(NOX_Yearly_Mean)
 Yearly_Means = list(NOX_Yearly_Mean, PM25_Yearly_Mean, SO2_Yearly_Mean, O3_Yearly_Mean)
 
 Combined_Yearly_Mean = reduce(Yearly_Means, full_join, by = "Year")
-kable(Combined_Yearly_Mean)
+head(kable(Combined_Yearly_Mean))
 
 ```
 
@@ -171,7 +162,7 @@ Graphing_Yearly_Means <- Combined_Yearly_Mean %>%
                pivot_longer(cols = starts_with("Mean"),
                names_to = "Pollutant",
                values_to = "Value")
-kable(Graphing_Yearly_Means)
+head(kable(Graphing_Yearly_Means))
 ggplot(Graphing_Yearly_Means, 
        aes(x = Year, y = Value, 
            col = factor(Pollutant, 
@@ -194,8 +185,29 @@ values = left_join(values.2003, values.2022, by="City")
 values = values %>% mutate(diff = Mean.x - Mean.y)
 t.test(values$diff)
 ```
-
-
-
+```{r}
+# find 2003, 2022
+values.2003 = O3 %>% filter(Year == 2003) %>% select(City, Mean)
+values.2022 = O3 %>% filter(Year == 2022) %>% select(City, Mean)
+values = left_join(values.2003, values.2022, by="City")
+values = values %>% mutate(diff = Mean.x - Mean.y)
+t.test(values$diff)
+```
+```{r}
+# find 2003, 2022
+values.2003 = PM25 %>% filter(Year == 2003) %>% select(City, Mean)
+values.2022 = PM25 %>% filter(Year == 2022) %>% select(City, Mean)
+values = left_join(values.2003, values.2022, by="City")
+values = values %>% mutate(diff = Mean.x - Mean.y)
+t.test(values$diff)
+```
+```{r}
+# find 2003, 2022
+values.2003 = SO2 %>% filter(Year == 2003) %>% select(City, Mean)
+values.2022 = SO2 %>% filter(Year == 2022) %>% select(City, Mean)
+values = left_join(values.2003, values.2022, by="City")
+values = values %>% mutate(diff = Mean.x - Mean.y)
+t.test(values$diff)
+```
 
 
