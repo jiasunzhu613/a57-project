@@ -1,3 +1,12 @@
+## Git Branch Tutorial
+- Set-up new branch: `git checkout -b {branch}`
+- Push changes from branch: `git push -u origin {branch}`
+- Deleting a branch: `git branch -d {branch}`
+
+- Some potentially helpful notes:
+  - you can use `git branch` to check which branch you are in
+  - you can use `git checkout {branch}` (notice we don't have the `-b` flag this time) to go to another branch
+
 ## MAIN TODO:
 - [ ] Description of the variables and the data  
 - [ ] A little background about the data (who collected it in what context)  
