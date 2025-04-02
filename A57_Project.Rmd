@@ -1,10 +1,15 @@
 ---
-title: "Investigation of NO~X~, PM~2.5~, and O~3~  (ppm) trends in Ontario from 2003 to 2022"
+title: Investigation of NO~X~, PM~2.5~, and O~3~  (ppm) trends in Ontario from 2003
+  to 2022
 author: "Mohamad Damaj - 10109, Moham An, Jo Zhu"
 date: "2025-03-18"
-output: 
+output:
+  pdf_document: default
   html_document:
     theme: lumen
+header-includes:
+  - \usepackage{caption}
+  - \captionsetup{font={small}}
 ---
 
 ```{r setup, include=FALSE}
@@ -16,6 +21,7 @@ knitr::opts_chunk$set(echo = TRUE)
 library(tidyverse)
 library(readxl)
 library(lubridate)
+library(kableExtra)
 library(ggplot2)
 library(lubridate)
 library(knitr)
@@ -29,7 +35,6 @@ library(gridExtra)
 NOX <- read_excel("./data/NOX.xlsx", skip = 3)
 O3 <- read_excel("./data/O3.xlsx", skip = 3)
 PM25 <- read_excel("./data/PM25.xlsx", skip = 5)
-SO2 <- read_excel("./data/SO2.xlsx", , skip = 7)
 ```
 
 
@@ -53,14 +58,14 @@ names(NOX)
 10. 24-Hour Maximum: The highest average concentration recorded over a 24-hour period in that year.
 
 
-## 2. Background of the Data
+# 2. Background of the Data
 
 The data used in this analysis was collected across various cities in Ontario, throughout the period from 2003 to 2022. These measurements were compiled and made available by the Ontario Ministry of the Environment, Conservation and Parks. 
 
 The information is publically avaliable and is helpful in assiting researchers, policymakers, and public health officials to investigate air quality trends, evaluate the impact of environmental regulations, and inform policy decisions. It provides a long-term view of pollutant levels in various cities in Ontario, allowing for improving environmental and public health outcomes in Ontario.
 
 
-## 3. Overall Research Question
+# 3. Overall Research Question
 
 The aim of this paper is to investigate the spatial and temporal trends of air pollutants (NO~X~, O~3~, and PM~2.5~) across various Ontario cities from 2003 to 2022. 
 
@@ -70,11 +75,10 @@ The aim of this paper is to investigate the spatial and temporal trends of air p
 
 3. How do the four pollutants correlate with each other across different cities and years, and what might this indicate about broader air quality patterns?
 
+4. How do the four pollutants project into future years based on current trends?
 
 
-## 4. Data Evaluation
 
-In order to view the pollutant concentration changes by region, we grouped the cities by region based on the map of Ontario from the Ministry of Natural Resources and Forestry, and calculated the mean of the cities in each region grouped by year.
 
 
 ```{r, include=FALSE}
@@ -95,11 +99,12 @@ city_to_region <- data.frame(
     "St. Catherines",
     "Port Stanley",
     "Essex",
-    
-    # Hamilton
     "Hamilton Mountain",
     "Hamilton Downtown",
     "Hamilton West",
+    "Guelph",
+
+    
     
     # GTA (Greater Toronto Area) - including Halton/Peel/York/Durham
     "Toronto Downtown",
@@ -115,10 +120,7 @@ city_to_region <- data.frame(
     "Milton",
     "Etobicoke West",
     "Stouffville",
-    
-    # Central Ontario
     "Barrie",
-    "Guelph",
     "Parry Sound",
     "Peterborough",
     
@@ -154,37 +156,35 @@ city_to_region <- data.frame(
     "Western Ontario",
     "Western Ontario",
     "Western Ontario",
+    "Western Ontario",
+    "Western Ontario",
+    "Western Ontario",
+    "Western Ontario",
 
 
-    
-    # Hamilton
-    "Hamilton",
-    "Hamilton",
-    "Hamilton",
 
     
     # GTA
-    "GTA",
-    "GTA",
-    "GTA",
-    "GTA",
-    "GTA",
-    "GTA",
-    "GTA",
-    "GTA",
-    "GTA",
-    "GTA",
-    "GTA",
-    "GTA",
-    "GTA",
+    "Central Ontario",
+    "Central Ontario",
+    "Central Ontario",
+    "Central Ontario",
+    "Central Ontario",
+    "Central Ontario",
+    "Central Ontario",
+    "Central Ontario",
+    "Central Ontario",
+    "Central Ontario",
+    "Central Ontario",
+    "Central Ontario",
+    "Central Ontario",
 
     
     
     # Central Ontario
     "Central Ontario",
     "Central Ontario",
-    "Central Ontario",
-    
+
     # Eastern Ontario
     "Eastern Ontario",
     "Eastern Ontario",
@@ -214,18 +214,15 @@ O3 = O3 %>% mutate(Mean = as.numeric(Mean)) %>%
   filter(Year >= 2003)
 PM25 = PM25 %>% mutate(Mean = as.numeric(Mean)) %>% 
   mutate(Year = as.integer(Year)) %>%  filter(Year >= 2003)
-#view(PM25)
 ```
 
-## NA imputing (TODO: decide what to do with this later)
-```{r}
+```{r, echo = F}
 O3 = O3 %>% drop_na(Mean)
 NOX = NOX %>% drop_na(Mean)
 PM25 = PM25 %>% drop_na(Mean)
 ```
 
-## Grouping in Regions
-```{r}
+```{r, echo = F}
 NOX = NOX %>% left_join(city_to_region, by = "City")
 O3 = O3 %>% left_join(city_to_region, by = "City")
 PM25 = PM25 %>% left_join(city_to_region, by = "City")
@@ -233,95 +230,134 @@ PM25 = PM25 %>% left_join(city_to_region, by = "City")
 
 ```
 
-```{r}
+
+```{r, echo = F}
+# Make tables
+# Mean per years for that particulate matter
+
+NOX_City_mean <- NOX %>% group_by(City) %>% summarise(Mean = mean(Mean))
+
+
+O3_City_mean <- O3 %>% group_by(City) %>% summarise(Mean = mean(Mean))
+PM25_City_mean <- PM25 %>% group_by(City) %>% summarise(Mean = mean(Mean))
+
+
+```
+
+
+# 4. Tables
+
+
+## 4.1 The Top 10 Cities With the Highest Pollutant Concentration (in ppm)
+
+
+```{r, echo = F, results='asis'}
+
+NOX_table <- kable(NOX_City_mean %>% mutate(Mean = round(Mean, 2)) %>% arrange(desc(Mean)) %>% head(10), "latex")
+O3_table <- kable(O3_City_mean %>% mutate(Mean = round(Mean, 2)) %>% arrange(desc(Mean)) %>% head(10), "latex")
+PM25_table <- kable(PM25_City_mean %>% mutate(Mean = round(Mean, 2)) %>% arrange(desc(Mean)) %>% head(10), "latex")
+cat("
+\\begin{table}[ht]
+\\begin{minipage}[t]{0.3\\linewidth}
+\\captionsetup{labelformat=empty, labelsep=none}
+\\caption{NO$_{X}$ Table}
+", NOX_table, "
+\\end{minipage}
+\\hfill
+\\begin{minipage}[t]{0.3\\linewidth}
+\\captionsetup{labelformat=empty, labelsep=none}
+\\caption{O$_{3}$ Table}
+", O3_table, "
+\\end{minipage}
+\\hfill
+\\begin{minipage}[t]{0.3\\linewidth}
+\\captionsetup{labelformat=empty, labelsep=none}
+\\caption{PM$_{2.5}$ Table}
+", PM25_table, "
+\\end{minipage}
+\\setcounter{table}{0}
+\\caption{Top 10 Cities with Highest Concentration of Each Pollutant (in ppm)}
+\\end{table}
+")
+
+
+
+```
+
+The table above is three separate tables each one for a respective pollutant, they are sorted in descending order and only the top 10 are being shown based on the overall Mean of the City, over all years from 2003 to 2022; as such, the cities with the high concentration (in ppm) will be listed first. Therefore, we can draw a few key observations about pollutant concentrations across these Ontario cities:
+
+  - The highest mean NO~x~ readings (31.32 ppm) appear at Toronto West, followed closely by other Toronto stations (Toronto East, Toronto Downtown) and industrial/urban areas like Hamilton and Windsor.
+  
+  - Port Stanley shows the highest O~3~ levels (32.84 ppm), with other high concentrations at Tiverton, Grand Bend, and Parry Sound—generally smaller or semi-rural communities.
+  
+  - Sarnia tops the PM~2.5~ list (9.57 ppm), followed by Windsor (West and Downtown) and Hamilton stations, reflecting the influence of industrial facilities and cross-border pollution.
+
+
+
+
+ 
+
+```{r, include = F}
 NOX_Region = NOX %>% group_by(Year, Region) %>% summarise(Mean = mean(Mean))
 O3_Region = O3 %>% group_by(Year, Region) %>% summarise(Mean = mean(Mean))
 PM25_Region = PM25 %>% group_by(Year, Region) %>% summarise(Mean = mean(Mean))
 
 
-
 ```
-```{r}
-kable(list(NOX_Region %>% arrange(desc(Mean)) %>% head(10), O3_Region %>% arrange(desc(Mean)) %>% head(10), PM25_Region %>% arrange(desc(Mean)) %>% head(10))) 
+# 4.2 The Top 10 Regions and Years with Highest Concentration of Each Pollutant (in ppm)
 
-```
-```{r}
-library(knitr)
-library(kableExtra)
-library(dplyr)
+In order to view the pollutant concentration changes by region, we grouped the cities by region based on the map of Ontario from the Ministry of Natural Resources and Forestry, and calculated the mean of the cities in each region grouped by year.
 
-# Create styled tables for each region table
-table_list <- list(
-  NOX_Region %>% arrange(desc(Mean)) %>% head(10),
-  O3_Region %>% arrange(desc(Mean)) %>% head(10),
-  PM25_Region %>% arrange(desc(Mean)) %>% head(10)
-)
-
-# For each table in the list, apply kable and styling
-styled_tables <- lapply(table_list, function(tbl) {
-  kable(tbl) %>% 
-    kable_styling(bootstrap_options = c("striped", "hover", "condensed"))
-})
-
-# Optionally, you can display the styled tables in your R Markdown or Shiny app.
-# For example, if you are using R Markdown, each table will be rendered one after another.
-styled_tables
-
-```
+```{r, results='asis', echo=FALSE}
 
 
+# Create the LaTeX tables without caption
+NOX_tab  <- kable(NOX_Region  %>% mutate(Mean = round(Mean, 2)) %>% arrange(desc(Mean)) %>% head(10), "latex")
+O3_tab   <- kable(O3_Region   %>% mutate(Mean = round(Mean, 2)) %>% arrange(desc(Mean)) %>% head(10), "latex")
+PM25_tab <- kable(PM25_Region %>% mutate(Mean = round(Mean, 2)) %>% arrange(desc(Mean)) %>% head(10), "latex")
+
+# Print side-by-side minipages with captions added via \captionof
+cat("
+\\begin{table}[ht]
+\\begin{minipage}[t]{0.3\\linewidth}
+\\captionsetup{labelformat=empty, labelsep=none}
+\\caption{NO$_{X}$ Table}
+", NOX_tab, "
+\\end{minipage}
+\\hfill
+\\begin{minipage}[t]{0.3\\linewidth}
+\\captionsetup{labelformat=empty, labelsep=none}
+\\caption{O$_{3}$ Table}
+", O3_tab, "
+\\end{minipage}
+\\hfill
+\\begin{minipage}[t]{0.3\\linewidth}
+\\captionsetup{labelformat=empty, labelsep=none}
+\\caption{PM$_{2.5}$ Table}
+", PM25_tab, "
+\\end{minipage}
+\\setcounter{table}{1}
+\\caption{Top 10 Regions and Years with Highest Concentration of Each Pollutant (in ppm)}
+\\end{table}
+# ")
 
 
-```{r}
-ggplot(NOX_Region, aes(x = Year, y = Mean, col = Region)) + geom_line() + facet_wrap(~ Region)
-ggplot(O3_Region, aes(x = Year, y = Mean, col = Region)) + geom_line() + theme(legend.position="none") + facet_wrap(~ Region) 
-ggplot(PM25_Region, aes(x = Year, y = Mean, col = Region)) + geom_line() + theme(legend.position="none") + facet_wrap(~ Region)
 
-```
 
-## Map cities
-```{r}
-NOX_LL = read_excel("./data/NOX_LL.xlsx")
-NOX_LL = NOX_LL %>% filter(Longitude < -50)
-NOX_map = ggplot(NOX_LL, aes(Longitude, Latitude)) + 
-  geom_jitter(size=0.1) +
-  coord_quickmap()
-NOX_map
+
 ```
 
 
 
-Tables
-```{r}
-# Make tables
-# Mean per years for that particulate matter
 
-NOX_City_mean = NOX %>% group_by(City) %>% summarise("Mean NOX" = mean(Mean))
 
-# kable(NOX_City_mean)
 
-SO2_City_mean = SO2 %>% group_by(City) %>% summarise("Mean SO2" = mean(Mean))
-O3_City_mean = O3 %>% group_by(City) %>% summarise("Mean O3" = mean(Mean))
-PM25_City_mean = PM25 %>% group_by(City) %>% summarise("Mean PM25" = mean(Mean))
 
-```
 
-## Need To Decide What to do with the NAs, left_join? or smthn?
-```{r}
-# Making one big table of Pollutant by City 
-
-City_Means = list(NOX_City_mean, PM25_City_mean, SO2_City_mean, O3_City_mean)
-
-Combined_City_Mean = reduce(City_Means, full_join, by = "City")
-head(kable(Combined_City_Mean))
-
-```
-
-```{r}
+```{r, echo = F}
 NOX_Yearly_Mean = NOX %>% group_by(Year) %>% summarise("Mean NOX" = mean(Mean))
 O3_Yearly_Mean = O3 %>% group_by(Year) %>% summarise("Mean O3" = mean(Mean))
 PM25_Yearly_Mean = PM25 %>% group_by(Year) %>% summarise("Mean PM25" = mean(Mean))
-SO2_Yearly_Mean = SO2 %>% group_by(Year) %>% summarise("Mean SO2" = mean(Mean))
 
 
 
@@ -331,38 +367,57 @@ head(kable(NOX_Yearly_Mean))
 
 
 ## Same thing w NAs, we prob should na.rm when we use mean O-O
-```{r}
+```{r, echo = F}
 # Making one big table of Pollutant by City 
 
-Yearly_Means = list(NOX_Yearly_Mean, PM25_Yearly_Mean, SO2_Yearly_Mean, O3_Yearly_Mean)
+Yearly_Means = list(NOX_Yearly_Mean, PM25_Yearly_Mean, O3_Yearly_Mean)
 
 Combined_Yearly_Mean = reduce(Yearly_Means, full_join, by = "Year")
 kable(Combined_Yearly_Mean %>% head(10))
 
 ```
 
+```{r, echo = F}
+ggplot(NOX_Region, aes(x = Year, y = Mean, col = Region)) + geom_line() + facet_wrap(~ Region)
+ggplot(O3_Region, aes(x = Year, y = Mean, col = Region)) + geom_line() + theme(legend.position="none") + facet_wrap(~ Region) 
+ggplot(PM25_Region, aes(x = Year, y = Mean, col = Region)) + geom_line() + theme(legend.position="none") + facet_wrap(~ Region)
 
-```{r}
+```
+
+## Map cities
+```{r, echo = F}
+NOX_LL = read_excel("./data/NOX_LL.xlsx")
+NOX_LL = NOX_LL %>% filter(Longitude < -50)
+NOX_map = ggplot(NOX_LL, aes(Longitude, Latitude)) + 
+  geom_jitter(size=0.1) +
+  coord_quickmap()
+NOX_map
+```
+
+
+```{r, echo = F}
 Graphing_Yearly_Means <- Combined_Yearly_Mean %>% 
                pivot_longer(cols = starts_with("Mean"),
                names_to = "Pollutant",
                values_to = "Value")
-head(kable(Graphing_Yearly_Means))
 ggplot(Graphing_Yearly_Means, 
        aes(x = Year, y = Value, 
            col = factor(Pollutant, 
-                        levels = c("Mean NOX", "Mean O3", "Mean PM25", "Mean SO2"), 
-                        labels = c("NOX", "O3", "PM25", "SO2")))) + 
+                        levels = c("Mean NOX", "Mean O3", "Mean PM25"), 
+                        labels = c("NOX", "O3", "PM25")))) + 
       geom_point() +
       labs(col = "Pollutants")
 ```
+
+
+
 
 ## Paired T-test
 compare the value of two years (2003, 2022), x_2003, x_2022
 H_0: u_1 - u_2 = 0
 H_a: u_1 - u_2 != 0
 
-```{r}
+```{r, echo = F}
 # find 2003, 2022
 values.2003 = NOX %>% filter(Year == 2003) %>% select(City, Mean)
 values.2022 = NOX %>% filter(Year == 2022) %>% select(City, Mean)
@@ -370,7 +425,7 @@ values = left_join(values.2003, values.2022, by="City")
 values = values %>% mutate(diff = Mean.x - Mean.y)
 t.test(values$diff)
 ```
-```{r}
+```{r, echo = F}
 # find 2003, 2022
 values.2003 = O3 %>% filter(Year == 2003) %>% select(City, Mean)
 values.2022 = O3 %>% filter(Year == 2022) %>% select(City, Mean)
@@ -378,7 +433,7 @@ values = left_join(values.2003, values.2022, by="City")
 values = values %>% mutate(diff = Mean.x - Mean.y)
 t.test(values$diff)
 ```
-```{r}
+```{r, echo = F}
 # find 2003, 2022
 values.2003 = PM25 %>% filter(Year == 2003) %>% select(City, Mean)
 values.2022 = PM25 %>% filter(Year == 2022) %>% select(City, Mean)
