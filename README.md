@@ -8,13 +8,13 @@
   - you can use `git checkout {branch}` (notice we don't have the `-b` flag this time) to go to another branch
 
 ## MAIN TODO:
-- [ ] Description of the variables and the data  
-- [ ] A little background about the data (who collected it in what context)  
+- [x] Description of the variables and the data  
+- [x] A little background about the data (who collected it in what context)  
 - [ ] What is the overall research question that you are trying to answer in your report  
-- [ ] Few tables (appropriately labeled)  
-- [ ] Few graphs (appropriately labeled)  
-- [ ] Use of confidence interval and test of hypothesis  
-- [ ] Use of bootstrapping  
+- [x] Few tables (appropriately labeled)  
+- [x] Few graphs (appropriately labeled)  
+- [x] Use of confidence interval and test of hypothesis  
+- [x] Use of bootstrapping  
 - [ ] Use of regression analysis (linear or nonlinear regression [week-9] or logistic regression [week-10] or decision tree/random forest [week-11])  
 - [ ] Interpretation of the regression parameters when applicable  
 - [ ] Use of cross-validation  

@@ -28,7 +28,7 @@ library(knitr)
 library(stringr)
 library(tidygeocoder)
 library(gridExtra)
-
+library(naniar)
 ```
 
 ```{r, include = FALSE}
@@ -405,7 +405,10 @@ ggplot(Graphing_Yearly_Means,
            col = factor(Pollutant, 
                         levels = c("Mean NOX", "Mean O3", "Mean PM25"), 
                         labels = c("NOX", "O3", "PM25")))) + 
+                        levels = c("Mean NOX", "Mean O3", "Mean PM25"), 
+                        labels = c("NOX", "O3", "PM25")))) + 
       geom_point() +
+      stat_smooth(method=lm, formula=(y~poly(x, degree=2, raw=TRUE))) + 
       labs(col = "Pollutants")
 ```
 
