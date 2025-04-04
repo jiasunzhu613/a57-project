@@ -4,12 +4,9 @@ title: Investigation of NO~x~ (in ppb), O~3~ (in ppb), and PM~2.5~ (in µg/m3) t
 author: "Mohamad Damaj - 10109, Moham An, Jo Zhu"
 date: "2025-03-18"
 output:
-  pdf_document: default
   html_document:
     theme: lumen
-header-includes:
-  - \usepackage{caption}
-  - \captionsetup{font={small}}
+  pdf_document: default
 ---
 
 ```{r setup, include=FALSE}
@@ -22,20 +19,24 @@ library(tidyverse)
 library(readxl)
 library(patchwork)
 library(lubridate)
-library(kableExtra)
 library(ggplot2)
 library(lubridate)
 library(knitr)
 library(stringr)
 library(tidygeocoder)
 library(gridExtra)
-
+library(naniar)
 ```
 
 ```{r, include = FALSE}
 NOX <- read_excel("./data/NOX.xlsx", skip = 3)
 O3 <- read_excel("./data/O3.xlsx", skip = 3)
 PM25 <- read_excel("./data/PM25.xlsx", skip = 5)
+SO2 <- read_excel("./data/SO2.xlsx", , skip = 7)
+
+miss_var_summary(NOX)
+miss_var_summary(O3)
+miss_var_summary(PM25)
 ```
 
 
@@ -59,14 +60,14 @@ names(NOX)
 10. 24-Hour Maximum: The highest average concentration recorded over a 24-hour period in that year.
 
 
-# 2. Background of the Data
+## 2. Background of the Data
 
 The data used in this analysis was collected across various cities in Ontario, throughout the period from 2003 to 2022. These measurements were compiled and made available by the Ontario Ministry of the Environment, Conservation and Parks. 
 
 The information is publically avaliable and is helpful in assiting researchers, policymakers, and public health officials to investigate air quality trends, evaluate the impact of environmental regulations, and inform policy decisions. It provides a long-term view of pollutant levels in various cities in Ontario, allowing for improving environmental and public health outcomes in Ontario.
 
 
-# 3. Overall Research Question
+## 3. Overall Research Question
 
 The aim of this paper is to investigate the spatial and temporal trends of air pollutants (NO~x~, O~3~, and PM~2.5~) across various Ontario cities from 2003 to 2022. 
 
@@ -76,10 +77,11 @@ The aim of this paper is to investigate the spatial and temporal trends of air p
 
 3. How do the four pollutants correlate with each other across different cities and years, and what might this indicate about broader air quality patterns?
 
-4. How do the four pollutants project into future years based on current trends?
 
 
+## 4. Data Evaluation
 
+In order to view the pollutant concentration changes by region, we grouped the cities by region based on the map of Ontario from the Ministry of Natural Resources and Forestry, and calculated the mean of the cities in each region grouped by year.
 
 
 ```{r, include=FALSE}
@@ -100,12 +102,11 @@ city_to_region <- data.frame(
     "St. Catherines",
     "Port Stanley",
     "Essex",
+    
+    # Hamilton
     "Hamilton Mountain",
     "Hamilton Downtown",
     "Hamilton West",
-    "Guelph",
-
-    
     
     # GTA (Greater Toronto Area) - including Halton/Peel/York/Durham
     "Toronto Downtown",
@@ -121,7 +122,10 @@ city_to_region <- data.frame(
     "Milton",
     "Etobicoke West",
     "Stouffville",
+    
+    # Central Ontario
     "Barrie",
+    "Guelph",
     "Parry Sound",
     "Peterborough",
     
@@ -157,35 +161,37 @@ city_to_region <- data.frame(
     "Western Ontario",
     "Western Ontario",
     "Western Ontario",
-    "Western Ontario",
-    "Western Ontario",
-    "Western Ontario",
-    "Western Ontario",
-
 
 
     
+    # Hamilton
+    "Hamilton",
+    "Hamilton",
+    "Hamilton",
+
+    
     # GTA
-    "Central Ontario",
-    "Central Ontario",
-    "Central Ontario",
-    "Central Ontario",
-    "Central Ontario",
-    "Central Ontario",
-    "Central Ontario",
-    "Central Ontario",
-    "Central Ontario",
-    "Central Ontario",
-    "Central Ontario",
-    "Central Ontario",
-    "Central Ontario",
+    "GTA",
+    "GTA",
+    "GTA",
+    "GTA",
+    "GTA",
+    "GTA",
+    "GTA",
+    "GTA",
+    "GTA",
+    "GTA",
+    "GTA",
+    "GTA",
+    "GTA",
 
     
     
     # Central Ontario
     "Central Ontario",
     "Central Ontario",
-
+    "Central Ontario",
+    
     # Eastern Ontario
     "Eastern Ontario",
     "Eastern Ontario",
@@ -215,15 +221,18 @@ O3 = O3 %>% mutate(Mean = as.numeric(Mean)) %>%
   filter(Year >= 2003)
 PM25 = PM25 %>% mutate(Mean = as.numeric(Mean)) %>% 
   mutate(Year = as.integer(Year)) %>%  filter(Year >= 2003)
+#view(PM25)
 ```
 
-```{r, echo = F}
+## NA imputing (TODO: decide what to do with this later)
+```{r}
 O3 = O3 %>% drop_na(Mean)
 NOX = NOX %>% drop_na(Mean)
 PM25 = PM25 %>% drop_na(Mean)
 ```
 
-```{r, echo = F}
+## Grouping in Regions
+```{r}
 NOX = NOX %>% left_join(city_to_region, by = "City")
 O3 = O3 %>% left_join(city_to_region, by = "City")
 PM25 = PM25 %>% left_join(city_to_region, by = "City")
@@ -442,6 +451,8 @@ Graphing_Yearly_Means <- Combined_Yearly_Mean %>%
                pivot_longer(cols = starts_with("Conc."),
                names_to = "Pollutant",
                values_to = "Value")
+head(Graphing_Yearly_Means)
+#head(kable(Graphing_Yearly_Means))
 ggplot(Graphing_Yearly_Means, 
        aes(x = Year, y = Value, 
            col = factor(Pollutant, 
@@ -878,6 +889,5 @@ for (i in 1:5) {
 cat("The average MSE is:", mean(k_fold_mse), "\n")
 # 10. Summary of Research: No code for this section
 ```
-
-
-
+## Evaluation 
+The one sample t-test of the difference between the mean pollutant level in different cities in 2003 and 2022 shows a significant change in the mean pollutant levels in different cities over the years. The p-value of 4.748e-08 being less than 0.0001 suggests that there is significant evidence against the null hypothesis of there being no difference in the mean pollutant level in different cities over time. Likewise, since the null hypothesis of 0 is not within the 95% confidence interval of (1.050617, 1.844383), we have further evidence against the null hypothesis. Therefore, we can confidently reject the null hypothesis and conclude that over the years, there has been a change in the mean pollutant level in different cities in Canada.
