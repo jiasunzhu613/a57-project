@@ -512,6 +512,7 @@ process_and_plot <- function(data, data_name) {
   merged_data <- merged_data %>% 
     select(Year, City, Mean, SHAPE_Area, SHAPE_Leng, geometry)
 
+
   # Plot
   return( ggplot() +
     geom_sf(data = merged_data, aes(fill = Mean)) +
@@ -533,7 +534,7 @@ datalist <- list(
 # Loop through and call the function
 for (item in datalist) {
  p<- process_and_plot(item[[1]], item[[2]])
- p
+ print(p)
 }
 ```
 
