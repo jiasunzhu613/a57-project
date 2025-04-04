@@ -616,4 +616,348 @@ The average MSE from the k-fold cross validation was 0.5452296 which is relative
 
 
 
+```{r eval=FALSE, echo=TRUE, fig.width=8.2, message=FALSE, warning=FALSE, out.width="100%", results='hide'}
+library(tidyverse)
+library(readxl)
+library(patchwork)
+library(lubridate)
+library(kableExtra)
+library(ggplot2)
+library(lubridate)
+library(knitr)
+library(stringr)
+library(tidygeocoder)
+library(gridExtra)
+
+
+NOX <- read_excel("./data/NOX.xlsx", skip = 3)
+O3 <- read_excel("./data/O3.xlsx", skip = 3)
+PM25 <- read_excel("./data/PM25.xlsx", skip = 5)
+
+# 1
+names(NOX)
+
+# 3
+city_to_region <- data.frame(City = c(
+    # Southwest
+    "Windsor West","Windsor Downtown","Windsor North","Grand Bend","London",
+    "Chatham","Sarnia","Brantford","Kitchener",
+    "St. Catharines","St. Catherines","Port Stanley","Essex","Hamilton Mountain",
+    "Hamilton Downtown","Hamilton West","Guelph",
+    # GTA (Greater Toronto Area) - including Halton/Peel/York/Durham
+    "Toronto Downtown","Toronto East","Toronto North","Toronto West","Burlington",
+    "Oakville","Oshawa","Brampton","Mississauga",
+    "Newmarket","Milton","Etobicoke West","Stouffville","Barrie","Parry Sound",
+    "Peterborough",
+    # Eastern Ontario
+    "Ottawa Downtown","Ottawa Central","Kingston","Tiverton","Belleville",
+    "Cornwall","Dorset","Petawawa","Morrisburg",
+    # Northern Ontario
+    "Sudbury","Sault Ste. Marie","North Bay","Thunder Bay"
+  ),Region = c(
+    # Southwest
+    "Western Ontario","Western Ontario","Western Ontario","Western Ontario",
+    "Western Ontario","Western Ontario","Western Ontario","Western Ontario",
+    "Western Ontario",
+    "Western Ontario","Western Ontario","Western Ontario","Western Ontario",
+    "Western Ontario","Western Ontario","Western Ontario","Western Ontario",
+    # GTA
+    "Central Ontario","Central Ontario","Central Ontario","Central Ontario",
+    "Central Ontario","Central Ontario","Central Ontario","Central Ontario",
+    "Central Ontario","Central Ontario","Central Ontario","Central Ontario",
+    "Central Ontario",
+    # Central Ontario
+    "Central Ontario",
+    "Central Ontario",
+    # Eastern Ontario
+    "Eastern Ontario","Eastern Ontario","Eastern Ontario","Eastern Ontario",
+    "Eastern Ontario","Eastern Ontario","Eastern Ontario","Eastern Ontario",
+    "Eastern Ontario","Eastern Ontario",
+    # Northern Ontario
+    "Northern Ontario","Northern Ontario","Northern Ontario","Northern Ontario"
+  ),stringsAsFactors = FALSE)
+
+
+
+NOX = NOX %>% mutate(Mean = as.numeric(Mean)) %>%  
+  filter(Year >= 2003)
+O3 = O3 %>% mutate(Mean = as.numeric(Mean)) %>%  
+  filter(Year >= 2003)
+PM25 = PM25 %>% mutate(Mean = as.numeric(Mean)) %>% 
+  mutate(Year = as.integer(Year)) %>%  filter(Year >= 2003)
+
+O3 = O3 %>% drop_na(Mean)
+NOX = NOX %>% drop_na(Mean)
+PM25 = PM25 %>% drop_na(Mean)
+
+NOX = NOX %>% left_join(city_to_region, by = "City")
+O3 = O3 %>% left_join(city_to_region, by = "City")
+PM25 = PM25 %>% left_join(city_to_region, by = "City")
+
+# Make tables
+# Mean per years for that particulate matter
+
+NOX_City_mean <- NOX %>% group_by(City) %>% summarise(Conc. = mean(Mean))
+
+
+O3_City_mean <- O3 %>% group_by(City) %>% summarise(Conc. = mean(Mean))
+PM25_City_mean <- PM25 %>% group_by(City) %>% summarise(Conc. = mean(Mean))
+
+# 4
+# 4.1
+NOX_table <- kable(NOX_City_mean %>% mutate(Conc. = round(Conc., 2)) %>% 
+                     arrange(desc(Conc.)) %>% head(10), "latex")
+O3_table <- kable(O3_City_mean %>% mutate(Conc. = round(Conc., 2)) %>% 
+                    arrange(desc(Conc.)) %>% head(10), "latex")
+PM25_table <- kable(PM25_City_mean %>% mutate(Conc. = round(Conc.,2)) %>% 
+                      arrange(desc(Conc.)) %>% head(10), "latex")
+
+cat("
+\\begin{table}[ht]
+\\begin{minipage}[t]{0.3\\linewidth}
+\\captionsetup{labelformat=empty, labelsep=none}
+\\caption{NO$_{x}$ Table (in ppb)}
+", NOX_table, "
+\\end{minipage}
+\\hfill
+\\begin{minipage}[t]{0.3\\linewidth}
+\\captionsetup{labelformat=empty, labelsep=none}
+\\caption{O$_{3}$ Table (in ppb)}
+", O3_table, "
+\\end{minipage}
+\\hfill
+\\begin{minipage}[t]{0.3\\linewidth}
+\\captionsetup{labelformat=empty, labelsep=none}
+\\caption{PM$_{2.5}$ Table (in  µg/m$_{3}$)}
+", PM25_table, "
+\\end{minipage}
+\\setcounter{table}{0}
+\\caption{Top 10 Cities with Highest Concentration of Each Pollutant}
+\\end{table}
+")
+
+ 
+NOX_Region = NOX %>% group_by(Year, Region) %>% summarise(Conc. = mean(Mean))
+O3_Region = O3 %>% group_by(Year, Region) %>% summarise(Conc. = mean(Mean))
+PM25_Region = PM25 %>% group_by(Year, Region) %>% summarise(Conc. = mean(Mean))
+
+# 4.2
+
+# Create the LaTeX tables without caption
+NOX_tab  <- kable(NOX_Region  %>% mutate(Conc. = round(Conc., 2)) %>% 
+                    arrange(desc(Conc.)) %>% head(10), "latex")
+O3_tab   <- kable(O3_Region   %>% mutate(Conc. = round(Conc., 2)) %>% 
+                    arrange(desc(Conc.)) %>% head(10), "latex")
+PM25_tab <- kable(PM25_Region %>% mutate(Conc. = round(Conc., 2)) %>% 
+                    arrange(desc(Conc.)) %>% head(10), "latex")
+
+
+cat("
+\\begin{table}[ht]
+\\begin{minipage}[t]{0.3\\linewidth}
+\\captionsetup{labelformat=empty, labelsep=none}
+\\caption{NO$_{x}$ Table (in ppb)}
+", NOX_tab, "
+\\end{minipage}
+\\hfill
+\\begin{minipage}[t]{0.3\\linewidth}
+\\captionsetup{labelformat=empty, labelsep=none}
+\\caption{O$_{3}$ Table (in ppb)}
+", O3_tab, "
+\\end{minipage}
+\\hfill
+\\begin{minipage}[t]{0.3\\linewidth}
+\\captionsetup{labelformat=empty, labelsep=none}
+\\caption{PM$_{2.5}$ Table (in  µg/m$_{3}$)}
+", PM25_tab, "
+\\end{minipage}
+\\setcounter{table}{1}
+\\caption{Top 10 Regions and Years with Highest Concentration of Each Pollutant}
+\\end{table}
+\\vspace{-17mm}
+# ")
+
+# 4.3
+
+NOX_Yearly_Mean = NOX %>% group_by(Year) %>% summarise(Conc. = round(mean(Mean), 2))
+O3_Yearly_Mean = O3 %>% group_by(Year) %>% summarise(Conc. = round(mean(Mean),2))
+PM25_Yearly_Mean = PM25 %>% group_by(Year) %>% summarise(Conc. = round(mean(Mean) ,2))
+
+NOX_tab  <- kable(NOX_Yearly_Mean  %>% mutate(Conc. = round(Conc., 2)) %>% 
+                    arrange(desc(Conc.)) %>% head(10), "latex")
+O3_tab   <- kable(O3_Yearly_Mean   %>% mutate(Conc. = round(Conc., 2)) %>% 
+                    arrange(desc(Conc.)) %>% head(10), "latex")
+PM25_tab <- kable(PM25_Yearly_Mean %>% mutate(Conc. = round(Conc., 2)) %>% 
+                    arrange(desc(Conc.)) %>% head(10), "latex") 
+
+cat("
+\\begin{table}[ht]
+\\centering
+\\begin{minipage}[t]{0.3\\linewidth}
+  \\centering
+  \\captionsetup{labelformat=empty, labelsep=none}
+  \\caption{NO$_{x}$ Table (in ppb)}
+", NOX_tab, "
+\\end{minipage}
+\\quad
+\\begin{minipage}[t]{0.3\\linewidth}
+  \\centering
+  \\captionsetup{labelformat=empty, labelsep=none}
+  \\caption{O$_{3}$ Table (in ppb)}
+", O3_tab, "
+\\end{minipage}
+\\quad
+\\begin{minipage}[t]{0.3\\linewidth}
+  \\centering
+  \\captionsetup{labelformat=empty, labelsep=none}
+  \\caption{PM$_{2.5}$ Table (in  µg/m$_{3}$)}
+", PM25_tab, "
+\\end{minipage}
+\\setcounter{table}{2}
+\\caption{Top 10 Years with the Highest Concentration}
+\\end{table}
+")
+
+# 5
+# 5.1
+plot_NOX  <- ggplot(NOX_Region, aes(x = Year, y = Conc., col = Region)) + 
+  geom_line() + 
+  facet_wrap(~ Region) + 
+  labs(title = expression(NO[x] ~ "Concentration by Region"), x = "Year", 
+       y = "Concentration (in ppb)") +
+  theme_minimal() +
+  theme(legend.position = "none", strip.text = element_blank())
+
+plot_O3 <- ggplot(O3_Region, aes(x = Year, y = Conc., col = Region)) + 
+  geom_line() + 
+  facet_wrap(~ Region) + 
+  labs(title = expression(O[3] ~ "Concentration by Region"), x = "Year", 
+       y = "Concentration (in ppb)") +
+  theme_minimal() +
+  theme(legend.position = "none", strip.text = element_blank())
+
+plot_PM25 <- ggplot(PM25_Region, aes(x = Year, y = Conc., col = Region)) + 
+  geom_line() + 
+  facet_wrap(~ Region) + 
+  labs(title = expression(PM[2.5] ~ "Concentration by Region"), x = "Year", 
+       y = expression("Concentration (in" ~ µg/m[3] *")")) +
+  theme_minimal() +
+  theme(legend.position = "none", strip.text = element_blank())
+
+(plot_NOX | plot_O3) / plot_PM25 +
+  plot_layout(guides = "collect") & theme(legend.position = "bottom")
+
+# 5.2
+
+Yearly_Means = list(NOX_Yearly_Mean, PM25_Yearly_Mean, O3_Yearly_Mean)
+
+Combined_Yearly_Mean = reduce(Yearly_Means, full_join, by = "Year")
+Combined_Yearly_Mean = Combined_Yearly_Mean %>%
+  rename(Conc.NOX = Conc..x, Conc.PM25 = Conc..y, Conc.O3 = Conc.)
+
+Graphing_Yearly_Means <- Combined_Yearly_Mean %>% 
+               pivot_longer(cols = starts_with("Conc."),
+               names_to = "Pollutant",
+               values_to = "Value")
+ggplot(Graphing_Yearly_Means, 
+       aes(x = Year, y = Value, 
+           col = factor(Pollutant, 
+                        levels = c("Conc.NOX", "Conc.O3", "Conc.PM25")))) + 
+      geom_point() +
+      labs(col = "Pollutant", y = "Concentration", title = "Total Concentration by Year ") + 
+  scale_color_discrete(labels = c(expression(NO[x] ~ "(in ppb)"), 
+      expression(O[3] ~ "(in ppb"), expression(PM[2.5] ~ "(in" ~ µg/m[3] *
+  ")"))) + theme(legend.position = "bottom")
+
+# 5.3
+
+# 6
+# Estimating the average of the Mean NOX over year X
+# Set random seed so that results are reproduceable
+set.seed(123)
+
+# Filter datasets for only the year 2022
+NOX_2022 <- NOX %>% filter(Year == 2022) %>% select(Mean)
+O3_2022 <- O3 %>% filter(Year == 2022) %>% select(Mean)
+PM25_2022 <- PM25 %>% filter(Year == 2022) %>% select(Mean)
+
+# Bootstrap function that will repeated take samples
+boot_function <- function() {
+  boot_sample_NOX = sample_n(NOX_2022, nrow(NOX_2022), replace=T)
+  boot_sample_O3 = sample_n(O3_2022, nrow(O3_2022), replace=T)
+  boot_sample_PM25 = sample_n(PM25_2022, nrow(PM25_2022), replace=T)
+  return (c(mean(boot_sample_NOX$Mean), mean(boot_sample_O3$Mean), 
+            mean(boot_sample_PM25$Mean)))
+}
+
+# Combine all bootstrap means into a dataframe
+bootstrap_bar = as.data.frame(replicate(1000, boot_function()))
+columns = c("NOX", "O3", "PM25")
+for (i in 1:3) {
+  # Flatten rows of dataframe into a column vectors
+  vec = as.vector(as.matrix(bootstrap_bar[i,]))
+  # Find the 2.5% and 97.5% quantile 
+  conf = quantile(vec, c(0.025, 0.975))
+  cat("95% confidence interval for", columns[i], "is", "[", conf[1], ",", 
+      conf[2], "]", "\n")
+}
+
+# 7
+# Estimating the average of the Mean NOX over year X
+# Set random seed so that results are reproduceable
+set.seed(123)
+
+# Filter datasets for only the year 2022
+NOX_2022 <- NOX %>% filter(Year == 2022) %>% select(Mean)
+O3_2022 <- O3 %>% filter(Year == 2022) %>% select(Mean)
+PM25_2022 <- PM25 %>% filter(Year == 2022) %>% select(Mean)
+
+# Bootstrap function that will repeated take samples
+boot_function <- function() {
+  boot_sample_NOX = sample_n(NOX_2022, nrow(NOX_2022), replace=T)
+  boot_sample_O3 = sample_n(O3_2022, nrow(O3_2022), replace=T)
+  boot_sample_PM25 = sample_n(PM25_2022, nrow(PM25_2022), replace=T)
+  return (c(mean(boot_sample_NOX$Mean), mean(boot_sample_O3$Mean), mean(boot_sample_PM25$Mean)))
+}
+
+# Combine all bootstrap means into a dataframe
+bootstrap_bar = as.data.frame(replicate(1000, boot_function()))
+columns = c("NOX", "O3", "PM25")
+datasets = c(NOX_2022, O3_2022, PM25_2022)
+for (i in 1:3) {
+  # Flatten rows of dataframe into a column vectors
+  vec = as.vector(as.matrix(bootstrap_bar[i,]))
+  # Find the 2.5% and 97.5% quantile 
+  conf = quantile(vec, c(0.025, 0.975))
+  cat(i, ")", "Mean", columns[i], "concentration of:", mean(datasets[i]$Mean), ",",  
+  "95% confidence interval for", columns[i], "is", "[", conf[1], ",", conf[2], "]", "\n")
+}
+
+# 8
+# 8.1
+NOX_other_pollutant_model = lm(formula(log(Conc.NOX)~Year + Conc.PM25 + Conc.O3),
+                               data = Combined_Yearly_Mean)
+summary(NOX_other_pollutant_model)
+
+# 9 
+set.seed(123)
+k_fold_mse = rep(0, 5)
+# Split data into 5 folds
+Combined_Yearly_Mean <- Combined_Yearly_Mean %>% 
+  mutate(group_ind = sample(c(1:5),size=nrow(Combined_Yearly_Mean), replace=TRUE))
+
+for (i in 1:5) {
+  # train on fold all fold not i then test on fold i 
+  train_set <- Combined_Yearly_Mean %>% filter(group_ind != i)
+  test_set <- Combined_Yearly_Mean %>% filter(group_ind == i)
+  NOX_other_pollutant_model = lm(formula(Conc.PM25~Year + Conc.NOX + Conc.O3), data = train_set)
+  pred = predict(NOX_other_pollutant_model, newdata=test_set)
+  mse = mean((test_set$Conc.PM25 - pred)^2)
+  k_fold_mse[i] = mse
+}
+cat("The average MSE is:", mean(k_fold_mse), "\n")
+
+```
+
+
 
