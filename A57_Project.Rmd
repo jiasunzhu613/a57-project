@@ -617,6 +617,7 @@ The average MSE from the k-fold cross validation was 0.5452296 which is relative
 
 
 ```{r eval=FALSE, echo=TRUE, fig.width=8.2, message=FALSE, warning=FALSE, out.width="100%", results='hide'}
+# Loading libraries
 library(tidyverse)
 library(readxl)
 library(patchwork)
@@ -628,16 +629,15 @@ library(knitr)
 library(stringr)
 library(tidygeocoder)
 library(gridExtra)
-
-
+# Reading in all data excel files
 NOX <- read_excel("./data/NOX.xlsx", skip = 3)
 O3 <- read_excel("./data/O3.xlsx", skip = 3)
 PM25 <- read_excel("./data/PM25.xlsx", skip = 5)
-
-# 1
+# 1. Description of the Dataset Columns
 names(NOX)
-
-# 3
+# 2. Background of the Data: No code for this section
+# 3. Overall Research Question 
+# Create a dataframe that contains the mapping of each city to it's region
 city_to_region <- data.frame(City = c(
     # Southwest
     "Windsor West","Windsor Downtown","Windsor North","Grand Bend","London",
@@ -676,74 +676,44 @@ city_to_region <- data.frame(City = c(
     # Northern Ontario
     "Northern Ontario","Northern Ontario","Northern Ontario","Northern Ontario"
   ),stringsAsFactors = FALSE)
-
-
-
+# Mutate datasets to have numeric means, years, and only contain data from 2003 onwards
 NOX = NOX %>% mutate(Mean = as.numeric(Mean)) %>%  
   filter(Year >= 2003)
 O3 = O3 %>% mutate(Mean = as.numeric(Mean)) %>%  
   filter(Year >= 2003)
 PM25 = PM25 %>% mutate(Mean = as.numeric(Mean)) %>% 
   mutate(Year = as.integer(Year)) %>%  filter(Year >= 2003)
-
+# Remove all rows with a non-numeric mean
 O3 = O3 %>% drop_na(Mean)
 NOX = NOX %>% drop_na(Mean)
 PM25 = PM25 %>% drop_na(Mean)
-
+# Join all data to city-region-mapping to convert cities into regions
 NOX = NOX %>% left_join(city_to_region, by = "City")
 O3 = O3 %>% left_join(city_to_region, by = "City")
 PM25 = PM25 %>% left_join(city_to_region, by = "City")
 
 # Make tables
 # Mean per years for that particulate matter
-
 NOX_City_mean <- NOX %>% group_by(City) %>% summarise(Conc. = mean(Mean))
-
-
 O3_City_mean <- O3 %>% group_by(City) %>% summarise(Conc. = mean(Mean))
 PM25_City_mean <- PM25 %>% group_by(City) %>% summarise(Conc. = mean(Mean))
 
-# 4
-# 4.1
+# 4. Tables
+# 4.1 The Top 10 Cities With the Highest Pollutant Concentration
+# Display tables of most relevant cities from datasets arranged in descending order 
 NOX_table <- kable(NOX_City_mean %>% mutate(Conc. = round(Conc., 2)) %>% 
                      arrange(desc(Conc.)) %>% head(10), "latex")
 O3_table <- kable(O3_City_mean %>% mutate(Conc. = round(Conc., 2)) %>% 
                     arrange(desc(Conc.)) %>% head(10), "latex")
 PM25_table <- kable(PM25_City_mean %>% mutate(Conc. = round(Conc.,2)) %>% 
                       arrange(desc(Conc.)) %>% head(10), "latex")
-
-cat("
-\\begin{table}[ht]
-\\begin{minipage}[t]{0.3\\linewidth}
-\\captionsetup{labelformat=empty, labelsep=none}
-\\caption{NO$_{x}$ Table (in ppb)}
-", NOX_table, "
-\\end{minipage}
-\\hfill
-\\begin{minipage}[t]{0.3\\linewidth}
-\\captionsetup{labelformat=empty, labelsep=none}
-\\caption{O$_{3}$ Table (in ppb)}
-", O3_table, "
-\\end{minipage}
-\\hfill
-\\begin{minipage}[t]{0.3\\linewidth}
-\\captionsetup{labelformat=empty, labelsep=none}
-\\caption{PM$_{2.5}$ Table (in  µg/m$_{3}$)}
-", PM25_table, "
-\\end{minipage}
-\\setcounter{table}{0}
-\\caption{Top 10 Cities with Highest Concentration of Each Pollutant}
-\\end{table}
-")
-
- 
+# Summarise data by determining the mean of each region over all years
 NOX_Region = NOX %>% group_by(Year, Region) %>% summarise(Conc. = mean(Mean))
 O3_Region = O3 %>% group_by(Year, Region) %>% summarise(Conc. = mean(Mean))
 PM25_Region = PM25 %>% group_by(Year, Region) %>% summarise(Conc. = mean(Mean))
 
-# 4.2
-
-# Create the LaTeX tables without caption
+# 4.2 The Top 10 Regions and Years with Highest Concentration of Each Pollutant
+# Display tables from datasets of the most relevant regions arranged in descending order 
 NOX_tab  <- kable(NOX_Region  %>% mutate(Conc. = round(Conc., 2)) %>% 
                     arrange(desc(Conc.)) %>% head(10), "latex")
 O3_tab   <- kable(O3_Region   %>% mutate(Conc. = round(Conc., 2)) %>% 
@@ -751,33 +721,7 @@ O3_tab   <- kable(O3_Region   %>% mutate(Conc. = round(Conc., 2)) %>%
 PM25_tab <- kable(PM25_Region %>% mutate(Conc. = round(Conc., 2)) %>% 
                     arrange(desc(Conc.)) %>% head(10), "latex")
 
-
-cat("
-\\begin{table}[ht]
-\\begin{minipage}[t]{0.3\\linewidth}
-\\captionsetup{labelformat=empty, labelsep=none}
-\\caption{NO$_{x}$ Table (in ppb)}
-", NOX_tab, "
-\\end{minipage}
-\\hfill
-\\begin{minipage}[t]{0.3\\linewidth}
-\\captionsetup{labelformat=empty, labelsep=none}
-\\caption{O$_{3}$ Table (in ppb)}
-", O3_tab, "
-\\end{minipage}
-\\hfill
-\\begin{minipage}[t]{0.3\\linewidth}
-\\captionsetup{labelformat=empty, labelsep=none}
-\\caption{PM$_{2.5}$ Table (in  µg/m$_{3}$)}
-", PM25_tab, "
-\\end{minipage}
-\\setcounter{table}{1}
-\\caption{Top 10 Regions and Years with Highest Concentration of Each Pollutant}
-\\end{table}
-\\vspace{-17mm}
-# ")
-
-# 4.3
+# 4.3 The Top 10 Years with Highest Concentration of Each Pollutant
 
 NOX_Yearly_Mean = NOX %>% group_by(Year) %>% summarise(Conc. = round(mean(Mean), 2))
 O3_Yearly_Mean = O3 %>% group_by(Year) %>% summarise(Conc. = round(mean(Mean),2))
