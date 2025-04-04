@@ -31,10 +31,10 @@ library(tidygeocoder)
 library(gridExtra)
 library(sf)
 library(viridis)
-library(gganimate)
 library(png)
 library(gifski)
 library(purrr)
+library(cowplot)
 ```
 
 ```{r, include = FALSE}
@@ -464,7 +464,7 @@ The plot reveals a downward trends of NO~x~ until 2020, with concentrations appe
 
 ## 5.3 Heatmap
 
-```{r echo=FALSE, message=FALSE, warning=FALSE}
+```{r echo=FALSE, fig.width=1, message=FALSE, warning=FALSE}
 group_cities <- function(data, exclude_cities){
   grouped_data <- data %>%
   filter(!City %in% exclude_cities) %>%  
@@ -514,7 +514,7 @@ process_and_plot <- function(data, data_name) {
   coords <- st_coordinates(merged_data)
   merged_data <- merged_data %>%
   mutate(max_lat = map_dbl(geometry, ~ max(st_coordinates(.x)[,2]))) %>%
-  filter(max_lat <= 48) %>%
+  filter(max_lat <= 47) %>%
   select(-max_lat)
   
   merged_data <- merged_data %>% 
@@ -527,7 +527,7 @@ process_and_plot <- function(data, data_name) {
     scale_fill_viridis_c() +
     theme_minimal() +
     labs(
-      title = paste("Mean Value of ", data_name, " Over Time"),
+      title = paste("Mean Value of", data_name, "Over Time"),
       fill = "Mean Value"
     ))
 }
@@ -539,13 +539,18 @@ datalist <- list(
   list(PM25, "PM25")
 )
 
-
+result_list <- list()  # Create an empty list
 # Loop through and call the function
-for (item in datalist) {
- p<- process_and_plot(item[[1]], item[[2]])
- print(p)
+
+for (i in seq_along(datalist)) {
+  # Process each item and store the result
+  p <- process_and_plot(datalist[[i]][[1]], datalist[[i]][[2]])
+  result_list[[i]] <- p
 }
+# TODO: render the graphs side by side
+plot_grid(result_list[[1]], result_list[[2]])
 ```
+The above graphs display the mean of each respective variable across Ontario cities. From these graphs, it can be surmised that NOX is more concentrated in reporting cities than O3, and both are more concentrated than PM25.
 
 
 # 6. Hypothesis Testing
@@ -716,6 +721,12 @@ library(knitr)
 library(stringr)
 library(tidygeocoder)
 library(gridExtra)
+library(sf)
+library(viridis)
+library(png)
+library(gifski)
+library(purrr)
+library(cowplot)
 # Reading in all data excel files
 NOX <- read_excel("./data/NOX.xlsx", skip = 3)
 O3 <- read_excel("./data/O3.xlsx", skip = 3)
@@ -876,7 +887,87 @@ ggplot(Graphing_Yearly_Means,
   ")"))) + theme(legend.position = "bottom")
 
 # 5.3 Heatmap of Mean Particle Concentration over all Time Accross Ontario
+group_cities <- function(data, exclude_cities){
+  grouped_data <- data %>%
+  filter(!City %in% exclude_cities) %>%  
+  # Exclude the cities from the dataset
+  bind_rows(
+    data %>%
+      # Get only the two cities we want, group their year rows, get their means and turn them into one row
+      filter(City %in% exclude_cities) %>%  
+      group_by(Year) %>%
+      # take mean of each column accross the row
+      summarise(across(where(is.numeric), ~mean(.x, na.rm = TRUE)), .groups = "drop") %>%
+      # fix the city name to be a combo of all cities
+      mutate(City = paste(exclude_cities, collapse = "-"))
+  )
+  return(grouped_data)
+}
+NOX_LL <- read_excel("./data/NOX.xlsx", skip = 3) %>% mutate(Mean = as.numeric(Mean)) %>%  
+  filter(Year >= 2003) %>% drop_na(Mean) %>% 
+  mutate(Year = as.integer(Year)) %>%
+  group_by(Year, City) %>%
+  summarise(Mean = mean(Mean, na.rm = TRUE))
+# Load Ontario shapefile
+Ontario <- st_read("data/shape") 
+Ontario <- Ontario %>% 
+  rename(City = NAME) 
+# Change CRS for Ontario
+st_crs(Ontario) <- 4326
+# Store city groupings
+subgroupings = list(c("Toronto Downtown", "Toronto East", "Toronto West", "Toronto North"), 
+                       c("Hamilton Downtown", "Hamilton West", "Hamilton Mountain"), 
+                       c("Windsor Downtown", "Windsor West"),
+                       c("Ottawa Downtown", "Ottawa Central"))
+# Define the function
+process_and_plot <- function(data, data_name) {
+  # Group subcities into one city
+  for (subgroup in subgroupings) {
+    data <- group_cities(data, subgroup)
+  }
+  # Convert city name to uppercase
+  data$City <- toupper(as.character(data$City))
+  # Join each data set with the shapefile
+  merged_data <- Ontario %>%
+    left_join(data, by = "City") %>% 
+    st_as_sf()
+  # Filter out any remote data point outliers
+  coords <- st_coordinates(merged_data)
+  merged_data <- merged_data %>%
+  mutate(max_lat = map_dbl(geometry, ~ max(st_coordinates(.x)[,2]))) %>%
+  filter(max_lat <= 47) %>%
+  select(-max_lat)
+  # Select only relevant columns in data
+  merged_data <- merged_data %>% 
+    select(Year, City, Mean, SHAPE_Area, SHAPE_Leng, geometry) 
+  # Plot
+  return( ggplot() +
+    geom_sf(data = merged_data, aes(fill = Mean)) +
+    scale_fill_viridis_c() +
+    theme_minimal() +
+    labs(
+      title = paste("Mean Value of", data_name, "Over Time"),
+      fill = "Mean Value"
+    ))
+}
 
+# Your datalist
+datalist <- list(
+  list(NOX_LL, "NOX"),
+  list(O3, "O3"),
+  list(PM25, "PM25")
+)
+
+result_list <- list()  # Create an empty list
+# Loop through and call the function
+
+for (i in seq_along(datalist)) {
+  # Process each item and store the result
+  p <- process_and_plot(datalist[[i]][[1]], datalist[[i]][[2]])
+  result_list[[i]] <- p
+}
+# TODO: render the graphs side by side
+plot_grid(result_list[[1]], result_list[[2]])
 # 6. Hypothesis Testing
 # Estimating the average of the Mean NOX over year X
 # Set random seed so that results are reproduceable
