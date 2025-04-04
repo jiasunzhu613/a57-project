@@ -785,7 +785,7 @@ ggplot(Graphing_Yearly_Means,
       geom_point() +
       labs(col = "Pollutant", y = "Concentration", title = "Total Concentration by Year ") + 
   scale_color_discrete(labels = c(expression(NO[x] ~ "(in ppb)"), 
-      expression(O[3] ~ "(in ppb"), expression(PM[2.5] ~ "(in" ~ µg/m[3] *
+      expression(O[3] ~ "(in ppb)"), expression(PM[2.5] ~ "(in" ~ µg/m[3] *
   ")"))) + theme(legend.position = "bottom")
 
 # 5.3 Heatmap of Mean Particle Concentration over all Time Accross Ontario
