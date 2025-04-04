@@ -4,7 +4,7 @@ title: Investigation of NO~x~ (in ppb), O~3~ (in ppb), and PM~2.5~ (in µg/m3) t
 author: "Mohamad Damaj - 10109, Moham An, Jo Zhu"
 date: "2025-03-18"
 output:
-  # pdf_document: default
+  pdf_document: default
   html_document:
     theme: lumen
 header-includes:
@@ -34,6 +34,7 @@ library(viridis)
 library(gganimate)
 library(png)
 library(gifski)
+library(purrr)
 ```
 
 ```{r, include = FALSE}
@@ -480,7 +481,6 @@ group_cities <- function(data, exclude_cities){
   )
   return(grouped_data)
 }
-library(purrr)
 NOX_LL <- read_excel("./data/NOX.xlsx", skip = 3) %>% mutate(Mean = as.numeric(Mean)) %>%  
   filter(Year >= 2003) %>% drop_na(Mean) %>% 
   mutate(Year = as.integer(Year)) %>%
