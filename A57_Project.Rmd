@@ -722,11 +722,11 @@ PM25_tab <- kable(PM25_Region %>% mutate(Conc. = round(Conc., 2)) %>%
                     arrange(desc(Conc.)) %>% head(10), "latex")
 
 # 4.3 The Top 10 Years with Highest Concentration of Each Pollutant
-
+# Summarise data by determining mean of all regions/ctiies over every year
 NOX_Yearly_Mean = NOX %>% group_by(Year) %>% summarise(Conc. = round(mean(Mean), 2))
 O3_Yearly_Mean = O3 %>% group_by(Year) %>% summarise(Conc. = round(mean(Mean),2))
 PM25_Yearly_Mean = PM25 %>% group_by(Year) %>% summarise(Conc. = round(mean(Mean) ,2))
-
+# Display tables from datasets of the yearly mean of each respective particle
 NOX_tab  <- kable(NOX_Yearly_Mean  %>% mutate(Conc. = round(Conc., 2)) %>% 
                     arrange(desc(Conc.)) %>% head(10), "latex")
 O3_tab   <- kable(O3_Yearly_Mean   %>% mutate(Conc. = round(Conc., 2)) %>% 
@@ -734,36 +734,9 @@ O3_tab   <- kable(O3_Yearly_Mean   %>% mutate(Conc. = round(Conc., 2)) %>%
 PM25_tab <- kable(PM25_Yearly_Mean %>% mutate(Conc. = round(Conc., 2)) %>% 
                     arrange(desc(Conc.)) %>% head(10), "latex") 
 
-cat("
-\\begin{table}[ht]
-\\centering
-\\begin{minipage}[t]{0.3\\linewidth}
-  \\centering
-  \\captionsetup{labelformat=empty, labelsep=none}
-  \\caption{NO$_{x}$ Table (in ppb)}
-", NOX_tab, "
-\\end{minipage}
-\\quad
-\\begin{minipage}[t]{0.3\\linewidth}
-  \\centering
-  \\captionsetup{labelformat=empty, labelsep=none}
-  \\caption{O$_{3}$ Table (in ppb)}
-", O3_tab, "
-\\end{minipage}
-\\quad
-\\begin{minipage}[t]{0.3\\linewidth}
-  \\centering
-  \\captionsetup{labelformat=empty, labelsep=none}
-  \\caption{PM$_{2.5}$ Table (in  µg/m$_{3}$)}
-", PM25_tab, "
-\\end{minipage}
-\\setcounter{table}{2}
-\\caption{Top 10 Years with the Highest Concentration}
-\\end{table}
-")
-
-# 5
-# 5.1
+# 5. Graphs
+# 5.1 Line Charts of Yearly Concentration by Region  
+# Display graphs of concentration of each respective particle over the years per region 
 plot_NOX  <- ggplot(NOX_Region, aes(x = Year, y = Conc., col = Region)) + 
   geom_line() + 
   facet_wrap(~ Region) + 
@@ -791,18 +764,20 @@ plot_PM25 <- ggplot(PM25_Region, aes(x = Year, y = Conc., col = Region)) +
 (plot_NOX | plot_O3) / plot_PM25 +
   plot_layout(guides = "collect") & theme(legend.position = "bottom")
 
-# 5.2
-
+# 5.2 Scatter Plot of Overall Pollutant Concentration by Year  
+# Store all yearly means for each respective particle
 Yearly_Means = list(NOX_Yearly_Mean, PM25_Yearly_Mean, O3_Yearly_Mean)
-
+# Merge all data by year
 Combined_Yearly_Mean = reduce(Yearly_Means, full_join, by = "Year")
+# Rename columns for ease of use
 Combined_Yearly_Mean = Combined_Yearly_Mean %>%
   rename(Conc.NOX = Conc..x, Conc.PM25 = Conc..y, Conc.O3 = Conc.)
-
+# Reshape data into longer format
 Graphing_Yearly_Means <- Combined_Yearly_Mean %>% 
                pivot_longer(cols = starts_with("Conc."),
                names_to = "Pollutant",
                values_to = "Value")
+# Graph yearly mean concentration of each particle over time
 ggplot(Graphing_Yearly_Means, 
        aes(x = Year, y = Value, 
            col = factor(Pollutant, 
@@ -813,9 +788,9 @@ ggplot(Graphing_Yearly_Means,
       expression(O[3] ~ "(in ppb"), expression(PM[2.5] ~ "(in" ~ µg/m[3] *
   ")"))) + theme(legend.position = "bottom")
 
-# 5.3
+# 5.3 Heatmap of Mean Particle Concentration over all Time Accross Ontario
 
-# 6
+# 6. Hypothesis Testing
 # Estimating the average of the Mean NOX over year X
 # Set random seed so that results are reproduceable
 set.seed(123)
@@ -846,7 +821,8 @@ for (i in 1:3) {
       conf[2], "]", "\n")
 }
 
-# 7
+# 7. Bootstrapping
+# Estimating the Average Concentration of Pollutants in 2022
 # Estimating the average of the Mean NOX over year X
 # Set random seed so that results are reproduceable
 set.seed(123)
@@ -877,13 +853,13 @@ for (i in 1:3) {
   "95% confidence interval for", columns[i], "is", "[", conf[1], ",", conf[2], "]", "\n")
 }
 
-# 8
-# 8.1
+# 8. Regression
+# 8.1 Analyzing the Relationship Between Pollutants and Year
 NOX_other_pollutant_model = lm(formula(log(Conc.NOX)~Year + Conc.PM25 + Conc.O3),
                                data = Combined_Yearly_Mean)
 summary(NOX_other_pollutant_model)
-
-# 9 
+# 8.2 Interpreting regression parameters: No code for this section
+# 9. Cross Validation
 set.seed(123)
 k_fold_mse = rep(0, 5)
 # Split data into 5 folds
@@ -900,7 +876,7 @@ for (i in 1:5) {
   k_fold_mse[i] = mse
 }
 cat("The average MSE is:", mean(k_fold_mse), "\n")
-
+# 10. Summary of Research: No code for this section
 ```
 
 
