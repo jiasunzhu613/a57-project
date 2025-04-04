@@ -4,7 +4,7 @@ title: Investigation of NO~x~ (in ppb), O~3~ (in ppb), and PM~2.5~ (in µg/m3) t
 author: "Mohamad Damaj - 10109, Moham An, Jo Zhu"
 date: "2025-03-18"
 output:
-  pdf_document: default
+  # pdf_document: default
   html_document:
     theme: lumen
 header-includes:
@@ -29,7 +29,11 @@ library(knitr)
 library(stringr)
 library(tidygeocoder)
 library(gridExtra)
-
+library(sf)
+library(viridis)
+library(gganimate)
+library(png)
+library(gifski)
 ```
 
 ```{r, include = FALSE}
@@ -459,6 +463,79 @@ The plot reveals a downward trends of NO~x~ until 2020, with concentrations appe
 
 ## 5.3 Heatmap
 
+```{r echo=FALSE, message=FALSE, warning=FALSE}
+group_cities <- function(data, exclude_cities){
+  grouped_data <- data %>%
+  filter(!City %in% exclude_cities) %>%  
+  # Exclude the cities from the dataset
+  bind_rows(
+    data %>%
+      # Get only the two cities we want, group their year rows, get their means and turn them into one row
+      filter(City %in% exclude_cities) %>%  
+      group_by(Year) %>%
+      # take mean of each column accross the row
+      summarise(across(where(is.numeric), ~mean(.x, na.rm = TRUE)), .groups = "drop") %>%
+      # fix the city name to be a combo of all cities
+      mutate(City = paste(exclude_cities, collapse = "-"))
+  )
+  return(grouped_data)
+}
+
+NOX_LL <- read_excel("./data/NOX.xlsx", skip = 3) %>% mutate(Mean = as.numeric(Mean)) %>%  
+  filter(Year >= 2003) %>% drop_na(Mean) %>% 
+  mutate(Year = as.integer(Year)) %>%
+  group_by(Year, City) %>%
+  summarise(Mean = mean(Mean, na.rm = TRUE))
+
+Ontario <- st_read("data/shape") 
+Ontario <- Ontario %>% 
+  rename(City = NAME) 
+
+st_crs(Ontario) <- 4326
+  
+subgroupings = list(c("Toronto Downtown", "Toronto East", "Toronto West", "Toronto North"), 
+                       c("Hamilton Downtown", "Hamilton West", "Hamilton Mountain"), 
+                       c("Windsor Downtown", "Windsor West"),
+                       c("Ottawa Downtown", "Ottawa Central"))
+# Define the function
+process_and_plot <- function(data, data_name) {
+  for (subgroup in subgroupings) {
+    data <- group_cities(data, subgroup)
+  }
+
+  data$City <- toupper(as.character(data$City))
+
+  merged_data <- Ontario %>%
+    left_join(data, by = "City") %>% 
+    st_as_sf()
+
+  merged_data <- merged_data %>% 
+    select(Year, City, Mean, SHAPE_Area, SHAPE_Leng, geometry)
+
+  # Plot
+  return( ggplot() +
+    geom_sf(data = merged_data, aes(fill = Mean)) +
+    scale_fill_viridis_c() +
+    theme_minimal() +
+    labs(
+      title = paste("Mean Value of Cities Over Time -", data_name),
+      fill = "Mean Value"
+    ))
+}
+
+# Your datalist
+datalist <- list(
+  list(NOX_LL, "NOX"),
+  list(O3, "O3 Particle")
+)
+
+
+# Loop through and call the function
+for (item in datalist) {
+ p<- process_and_plot(item[[1]], item[[2]])
+ p
+}
+```
 
 
 # 6. Hypothesis Testing
