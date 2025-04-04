@@ -480,7 +480,7 @@ group_cities <- function(data, exclude_cities){
   )
   return(grouped_data)
 }
-
+library(purrr)
 NOX_LL <- read_excel("./data/NOX.xlsx", skip = 3) %>% mutate(Mean = as.numeric(Mean)) %>%  
   filter(Year >= 2003) %>% drop_na(Mean) %>% 
   mutate(Year = as.integer(Year)) %>%
@@ -509,17 +509,25 @@ process_and_plot <- function(data, data_name) {
     left_join(data, by = "City") %>% 
     st_as_sf()
 
+    
+  # Extract coordinates; column 1 is longitude (x)
+  coords <- st_coordinates(merged_data)
+  merged_data <- merged_data %>%
+  mutate(max_lat = map_dbl(geometry, ~ max(st_coordinates(.x)[,2]))) %>%
+  filter(max_lat <= 48) %>%
+  select(-max_lat)
+  
   merged_data <- merged_data %>% 
-    select(Year, City, Mean, SHAPE_Area, SHAPE_Leng, geometry)
-
-
+    select(Year, City, Mean, SHAPE_Area, SHAPE_Leng, geometry) 
+  # merged_data <- merged_data[ coords[, 2] < 48, ]
+  
   # Plot
   return( ggplot() +
     geom_sf(data = merged_data, aes(fill = Mean)) +
     scale_fill_viridis_c() +
     theme_minimal() +
     labs(
-      title = paste("Mean Value of Cities Over Time -", data_name),
+      title = paste("Mean Value of ", data_name, " Over Time"),
       fill = "Mean Value"
     ))
 }
@@ -527,7 +535,8 @@ process_and_plot <- function(data, data_name) {
 # Your datalist
 datalist <- list(
   list(NOX_LL, "NOX"),
-  list(O3, "O3 Particle")
+  list(O3, "O3"),
+  list(PM25, "PM25")
 )
 
 
