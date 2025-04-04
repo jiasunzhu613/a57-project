@@ -1,5 +1,5 @@
 ---
-title: Investigation of NO~X~, PM~2.5~, and O~3~  (ppm) trends in Ontario from 2003
+title: Investigation of NO~x~ (in ppb), O~3~ (in ppb), and PM~2.5~ (in µg/m3) trends in Ontario from 2003
   to 2022
 author: "Mohamad Damaj - 10109, Moham An, Jo Zhu"
 date: "2025-03-18"
@@ -20,6 +20,7 @@ knitr::opts_chunk$set(echo = TRUE)
 ```{r, include = FALSE}
 library(tidyverse)
 library(readxl)
+library(patchwork)
 library(lubridate)
 library(kableExtra)
 library(ggplot2)
@@ -40,7 +41,7 @@ PM25 <- read_excel("./data/PM25.xlsx", skip = 5)
 
 # 1. Description of Datasets
 
-The datasets analyzed in this report are three, one for each of NO~X~, PM~2.5~, and O~3~, all containing the same variables. These datasets contain records of the pollutant levels (in parts per million, ppm) from  2003 (considered the earliest of all three) to 2022. Each dataset contains detailed information of pollutant levels in the form of the following variables:
+The datasets analyzed in this report are three, one for each of NO~x~ (in ppb), PM~2.5~ (in µg/m3), and O~3~ (in ppb), all containing the same variables. These datasets contain records of the pollutant levels from  2003 (considered the earliest of all three) to 2022. Each dataset contains detailed information of pollutant levels in the form of the following variables:
 
 ```{r, echo=F}
 
@@ -52,8 +53,8 @@ names(NOX)
 4. Location: A more specific description of the monitoring location (street, area).
 5. Type: The type of monitoring station or measurement protocol used.
 6. Valid Hour: The number of valid hourly measurements recorded for that pollutant in the given year.
-7. Percentiles: Percentile statistics showing the distribution of pollutant levels (in ppm) throughout the year.
-8. Mean: The annual average concentration of the pollutant (ppm).
+7. Percentiles: Percentile statistics showing the distribution of pollutant levels (in ppb, µg/m3, ppb) throughout the year.
+8. Mean: The annual average concentration of the pollutant (in ppb, µg/m3, ppb).
 9. 1-Hour Maximum: The highest recorded concentration within a one-hour period during the year.
 10. 24-Hour Maximum: The highest average concentration recorded over a 24-hour period in that year.
 
@@ -67,9 +68,9 @@ The information is publically avaliable and is helpful in assiting researchers, 
 
 # 3. Overall Research Question
 
-The aim of this paper is to investigate the spatial and temporal trends of air pollutants (NO~X~, O~3~, and PM~2.5~) across various Ontario cities from 2003 to 2022. 
+The aim of this paper is to investigate the spatial and temporal trends of air pollutants (NO~x~, O~3~, and PM~2.5~) across various Ontario cities from 2003 to 2022. 
 
-1. How have annual mean concentrations (in ppm) for each pollutant changed from 2003 to 2022, and which years show the most significant shifts?
+1. How have annual mean concentrations (in ppb, µg/m3, ppb) for each pollutant changed from 2003 to 2022, and which years show the most significant shifts?
 
 2. Which cities consistently rank among the highest (or lowest) in terms of average pollutant levels, and do these rankings shift over time?
 
@@ -235,11 +236,11 @@ PM25 = PM25 %>% left_join(city_to_region, by = "City")
 # Make tables
 # Mean per years for that particulate matter
 
-NOX_City_mean <- NOX %>% group_by(City) %>% summarise(Mean = mean(Mean))
+NOX_City_mean <- NOX %>% group_by(City) %>% summarise(Conc. = mean(Mean))
 
 
-O3_City_mean <- O3 %>% group_by(City) %>% summarise(Mean = mean(Mean))
-PM25_City_mean <- PM25 %>% group_by(City) %>% summarise(Mean = mean(Mean))
+O3_City_mean <- O3 %>% group_by(City) %>% summarise(Conc. = mean(Mean))
+PM25_City_mean <- PM25 %>% group_by(City) %>% summarise(Conc. = mean(Mean))
 
 
 ```
@@ -248,35 +249,35 @@ PM25_City_mean <- PM25 %>% group_by(City) %>% summarise(Mean = mean(Mean))
 # 4. Tables
 
 
-## 4.1 The Top 10 Cities With the Highest Pollutant Concentration (in ppm)
+## 4.1 The Top 10 Cities With the Highest Pollutant Concentration 
 
 
 ```{r, echo = F, results='asis'}
 
-NOX_table <- kable(NOX_City_mean %>% mutate(Mean = round(Mean, 2)) %>% arrange(desc(Mean)) %>% head(10), "latex")
-O3_table <- kable(O3_City_mean %>% mutate(Mean = round(Mean, 2)) %>% arrange(desc(Mean)) %>% head(10), "latex")
-PM25_table <- kable(PM25_City_mean %>% mutate(Mean = round(Mean, 2)) %>% arrange(desc(Mean)) %>% head(10), "latex")
+NOX_table <- kable(NOX_City_mean %>% mutate(Conc. = round(Conc., 2)) %>% arrange(desc(Conc.)) %>% head(10), "latex")
+O3_table <- kable(O3_City_mean %>% mutate(Conc. = round(Conc., 2)) %>% arrange(desc(Conc.)) %>% head(10), "latex")
+PM25_table <- kable(PM25_City_mean %>% mutate(Conc. = round(Conc.,2)) %>% arrange(desc(Conc.)) %>% head(10), "latex")
 cat("
 \\begin{table}[ht]
 \\begin{minipage}[t]{0.3\\linewidth}
 \\captionsetup{labelformat=empty, labelsep=none}
-\\caption{NO$_{X}$ Table}
+\\caption{NO$_{x}$ Table (in ppb)}
 ", NOX_table, "
 \\end{minipage}
 \\hfill
 \\begin{minipage}[t]{0.3\\linewidth}
 \\captionsetup{labelformat=empty, labelsep=none}
-\\caption{O$_{3}$ Table}
+\\caption{O$_{3}$ Table (in ppb)}
 ", O3_table, "
 \\end{minipage}
 \\hfill
 \\begin{minipage}[t]{0.3\\linewidth}
 \\captionsetup{labelformat=empty, labelsep=none}
-\\caption{PM$_{2.5}$ Table}
+\\caption{PM$_{2.5}$ Table (in  µg/m$_{3}$)}
 ", PM25_table, "
 \\end{minipage}
 \\setcounter{table}{0}
-\\caption{Top 10 Cities with Highest Concentration of Each Pollutant (in ppm)}
+\\caption{Top 10 Cities with Highest Concentration of Each Pollutant}
 \\end{table}
 ")
 
@@ -284,13 +285,13 @@ cat("
 
 ```
 
-The table above is three separate tables each one for a respective pollutant, they are sorted in descending order and only the top 10 are being shown based on the overall Mean of the City, over all years from 2003 to 2022; as such, the cities with the high concentration (in ppm) will be listed first. Therefore, we can draw a few key observations about pollutant concentrations across these Ontario cities:
+The table above is three separate tables each one for a respective pollutant, they are sorted in descending Mean and only the top 10 are being shown based on the overall Mean of the City, over all years from 2003 to 2022; as such, the cities with the high concentration will be listed first. Therefore, we can draw a few key observations about pollutant concentrations across these Ontario cities:
 
-  - The highest mean NO~x~ readings (31.32 ppm) appear at Toronto West, followed closely by other Toronto stations (Toronto East, Toronto Downtown) and industrial/urban areas like Hamilton and Windsor.
+  - The highest mean NO~x~ readings (31.32 ppb) appear at Toronto West, followed closely by other Toronto stations (Toronto East, Toronto Downtown) and industrial/urban areas like Hamilton and Windsor.
   
-  - Port Stanley shows the highest O~3~ levels (32.84 ppm), with other high concentrations at Tiverton, Grand Bend, and Parry Sound—generally smaller or semi-rural communities.
+  - Port Stanley shows the highest O~3~ levels (32.84 ppb), with other high concentrations at Tiverton, Grand Bend, and Parry Sound—generally smaller or semi-rural communities.
   
-  - Sarnia tops the PM~2.5~ list (9.57 ppm), followed by Windsor (West and Downtown) and Hamilton stations, reflecting the influence of industrial facilities and cross-border pollution.
+  - Sarnia tops the PM~2.5~ list (9.57 µg/m~3~), followed by Windsor (West and Downtown) and Hamilton stations, reflecting the influence of industrial facilities and cross-border pollution.
 
 
 
@@ -298,13 +299,13 @@ The table above is three separate tables each one for a respective pollutant, th
  
 
 ```{r, include = F}
-NOX_Region = NOX %>% group_by(Year, Region) %>% summarise(Mean = mean(Mean))
-O3_Region = O3 %>% group_by(Year, Region) %>% summarise(Mean = mean(Mean))
-PM25_Region = PM25 %>% group_by(Year, Region) %>% summarise(Mean = mean(Mean))
+NOX_Region = NOX %>% group_by(Year, Region) %>% summarise(Conc. = mean(Mean))
+O3_Region = O3 %>% group_by(Year, Region) %>% summarise(Conc. = mean(Mean))
+PM25_Region = PM25 %>% group_by(Year, Region) %>% summarise(Conc. = mean(Mean))
 
 
 ```
-# 4.2 The Top 10 Regions and Years with Highest Concentration of Each Pollutant (in ppm)
+## 4.2 The Top 10 Regions and Years with Highest Concentration of Each Pollutant
 
 In order to view the pollutant concentration changes by region, we grouped the cities by region based on the map of Ontario from the Ministry of Natural Resources and Forestry, and calculated the mean of the cities in each region grouped by year.
 
@@ -312,107 +313,156 @@ In order to view the pollutant concentration changes by region, we grouped the c
 
 
 # Create the LaTeX tables without caption
-NOX_tab  <- kable(NOX_Region  %>% mutate(Mean = round(Mean, 2)) %>% arrange(desc(Mean)) %>% head(10), "latex")
-O3_tab   <- kable(O3_Region   %>% mutate(Mean = round(Mean, 2)) %>% arrange(desc(Mean)) %>% head(10), "latex")
-PM25_tab <- kable(PM25_Region %>% mutate(Mean = round(Mean, 2)) %>% arrange(desc(Mean)) %>% head(10), "latex")
+NOX_tab  <- kable(NOX_Region  %>% mutate(Conc. = round(Conc., 2)) %>% arrange(desc(Conc.)) %>% head(10), "latex")
+O3_tab   <- kable(O3_Region   %>% mutate(Conc. = round(Conc., 2)) %>% arrange(desc(Conc.)) %>% head(10), "latex")
+PM25_tab <- kable(PM25_Region %>% mutate(Conc. = round(Conc., 2)) %>% arrange(desc(Conc.)) %>% head(10), "latex")
 
-# Print side-by-side minipages with captions added via \captionof
+
 cat("
 \\begin{table}[ht]
 \\begin{minipage}[t]{0.3\\linewidth}
 \\captionsetup{labelformat=empty, labelsep=none}
-\\caption{NO$_{X}$ Table}
+\\caption{NO$_{x}$ Table (in ppb)}
 ", NOX_tab, "
 \\end{minipage}
 \\hfill
 \\begin{minipage}[t]{0.3\\linewidth}
 \\captionsetup{labelformat=empty, labelsep=none}
-\\caption{O$_{3}$ Table}
+\\caption{O$_{3}$ Table (in ppb)}
 ", O3_tab, "
 \\end{minipage}
 \\hfill
 \\begin{minipage}[t]{0.3\\linewidth}
 \\captionsetup{labelformat=empty, labelsep=none}
-\\caption{PM$_{2.5}$ Table}
+\\caption{PM$_{2.5}$ Table (in  µg/m$_{3}$)}
 ", PM25_tab, "
 \\end{minipage}
 \\setcounter{table}{1}
-\\caption{Top 10 Regions and Years with Highest Concentration of Each Pollutant (in ppm)}
+\\caption{Top 10 Regions and Years with Highest Concentration of Each Pollutant}
 \\end{table}
+\\vspace{-17mm}
 # ")
 
-
-
-
-
 ```
 
 
 
+  This table follows a similar format to the Table 1, listing the highest concentrations first. The concentrations of NO~x~ (in ppb) and PM~2.5~ (in µg/m~3~) were highest in the early to mid-2000s, particularly in Western and Central Ontario, and have since declined. Meanwhile, O~3~ (in ppb) levels are highest in Western Ontario dominating the top 10 with Northern Ontario not occupying a single spot. The O~3~ concentrations show minor decrease, likely reflecting O~3~ long lifespan in the atmosphere. 
 
 
+## 4.3 The Top 10 Years with Highest Concentration of Each Pollutant
 
+```{r, echo = F, results ='asis'}
+NOX_Yearly_Mean = NOX %>% group_by(Year) %>% summarise(Conc. = round(mean(Mean), 2))
+O3_Yearly_Mean = O3 %>% group_by(Year) %>% summarise(Conc. = round(mean(Mean),2))
+PM25_Yearly_Mean = PM25 %>% group_by(Year) %>% summarise(Conc. = round(mean(Mean) ,2))
 
+NOX_tab  <- kable(NOX_Yearly_Mean  %>% mutate(Conc. = round(Conc., 2)) %>% arrange(desc(Conc.)) %>% head(10), "latex")
+O3_tab   <- kable(O3_Yearly_Mean   %>% mutate(Conc. = round(Conc., 2)) %>% arrange(desc(Conc.)) %>% head(10), "latex")
+PM25_tab <- kable(PM25_Yearly_Mean %>% mutate(Conc. = round(Conc., 2)) %>% arrange(desc(Conc.)) %>% head(10), "latex") 
 
-```{r, echo = F}
-NOX_Yearly_Mean = NOX %>% group_by(Year) %>% summarise("Mean NOX" = mean(Mean))
-O3_Yearly_Mean = O3 %>% group_by(Year) %>% summarise("Mean O3" = mean(Mean))
-PM25_Yearly_Mean = PM25 %>% group_by(Year) %>% summarise("Mean PM25" = mean(Mean))
+cat("
+\\begin{table}[ht]
+\\centering
+\\begin{minipage}[t]{0.3\\linewidth}
+  \\centering
+  \\captionsetup{labelformat=empty, labelsep=none}
+  \\caption{NO$_{x}$ Table (in ppb)}
+", NOX_tab, "
+\\end{minipage}
+\\quad
+\\begin{minipage}[t]{0.3\\linewidth}
+  \\centering
+  \\captionsetup{labelformat=empty, labelsep=none}
+  \\caption{O$_{3}$ Table (in ppb)}
+", O3_tab, "
+\\end{minipage}
+\\quad
+\\begin{minipage}[t]{0.3\\linewidth}
+  \\centering
+  \\captionsetup{labelformat=empty, labelsep=none}
+  \\caption{PM$_{2.5}$ Table (in  µg/m$_{3}$)}
+", PM25_tab, "
+\\end{minipage}
+\\setcounter{table}{2}
+\\caption{Top 10 Years with the Highest Concentration}
+\\end{table}
+")
 
-
-
-head(kable(NOX_Yearly_Mean))
 ```
 
+The table reveals that NO~x~ levels peaked in 2003 -- the first year of the dataset -- and has steadily decreased since. Additionally, PM~2.5~ concentrations were highest in the mid-2000s before decreasing, and O~3~ levels, which peaked around 2010–2012, have remained relatively high before a minor decrease in later years.
 
 
-## Same thing w NAs, we prob should na.rm when we use mean O-O
+
+# 5. Graphs
+
+## 5.1 Line Charts of Yearly Concentration by Region  
 ```{r, echo = F}
-# Making one big table of Pollutant by City 
+
+plot_NOX  <- ggplot(NOX_Region, aes(x = Year, y = Conc., col = Region)) + 
+  geom_line() + 
+  facet_wrap(~ Region) + 
+  labs(title = expression(NO[x] ~ "Concentration by Region"), x = "Year", y = "Concentration (in ppb)") +
+  theme_minimal() +
+  theme(legend.position = "none", strip.text = element_blank())
+
+plot_O3 <- ggplot(O3_Region, aes(x = Year, y = Conc., col = Region)) + 
+  geom_line() + 
+  facet_wrap(~ Region) + 
+  labs(title = expression(O[3] ~ "Concentration by Region"), x = "Year", y = "Concentration (in ppb)") +
+  theme_minimal() +
+  theme(legend.position = "none", strip.text = element_blank())
+
+plot_PM25 <- ggplot(PM25_Region, aes(x = Year, y = Conc., col = Region)) + 
+  geom_line() + 
+  facet_wrap(~ Region) + 
+  labs(title = expression(PM[2.5] ~ "Concentration by Region"), x = "Year", y = expression("Concentration (in" ~ µg/m[3] *")")) +
+  theme_minimal() +
+  theme(legend.position = "none", strip.text = element_blank())
+
+(plot_NOX | plot_O3) / plot_PM25 +
+  plot_layout(guides = "collect") & theme(legend.position = "bottom")
+```
+
+The Line Charts of Yearly Concentration by Region display the concentration of each pollutant faceted by region over 2003 till 2022. The x-axes represent the year and the y-axes represent the concentration of the pollutant at that year in its respective unit.    
+
+The graphs reveal a notable improvement in air quality over the years, with clear declines in both NO~x~ and PM~2.5~ levels across all regions, suggesting that emission controls and cleaner technologies have had a significant impact. NO~x~ concentrations show a consistent downward trend from higher levels in the early years, converging towards lower values by 2020, while PM~2.5~ levels exhibit a marked decrease, with the initial difference between regions decreasing over time. In contrast, O~3~ concentrations appear relatively stable -- with some fluctuations -- which reflects the complex nature of ozone formation that depends on multiple factors such as sunlight, temperature, and precursor emissions. 
+
+
+## 5.2 Scatter Plot of Overall Pollutant Concentration by Year  
+```{r, echo = F, fig.width=10, fig.height=5}
 
 Yearly_Means = list(NOX_Yearly_Mean, PM25_Yearly_Mean, O3_Yearly_Mean)
 
 Combined_Yearly_Mean = reduce(Yearly_Means, full_join, by = "Year")
-kable(Combined_Yearly_Mean %>% head(10))
-
-```
-
-```{r, echo = F}
-ggplot(NOX_Region, aes(x = Year, y = Mean, col = Region)) + geom_line() + facet_wrap(~ Region)
-ggplot(O3_Region, aes(x = Year, y = Mean, col = Region)) + geom_line() + theme(legend.position="none") + facet_wrap(~ Region) 
-ggplot(PM25_Region, aes(x = Year, y = Mean, col = Region)) + geom_line() + theme(legend.position="none") + facet_wrap(~ Region)
-
-```
-
-## Map cities
-```{r, echo = F}
-NOX_LL = read_excel("./data/NOX_LL.xlsx")
-NOX_LL = NOX_LL %>% filter(Longitude < -50)
-NOX_map = ggplot(NOX_LL, aes(Longitude, Latitude)) + 
-  geom_jitter(size=0.1) +
-  coord_quickmap()
-NOX_map
-```
 
 
-```{r, echo = F}
 Graphing_Yearly_Means <- Combined_Yearly_Mean %>% 
-               pivot_longer(cols = starts_with("Mean"),
+               pivot_longer(cols = starts_with("Conc."),
                names_to = "Pollutant",
                values_to = "Value")
 ggplot(Graphing_Yearly_Means, 
        aes(x = Year, y = Value, 
            col = factor(Pollutant, 
-                        levels = c("Mean NOX", "Mean O3", "Mean PM25"), 
-                        labels = c("NOX", "O3", "PM25")))) + 
+                        levels = c("Conc..x", "Conc.", "Conc..y")))) + 
       geom_point() +
-      labs(col = "Pollutants")
+      labs(col = "Pollutant", y = "Concentration", title = "Total Concentration by Year ") + 
+  scale_color_discrete(labels = c(expression(NO[x] ~ "(in ppb)"), expression(O[3] ~ "(in ppb"), expression(PM[2.5] ~ "(in" ~ µg/m[3] *
+  ")"))) + theme(legend.position = "bottom")
+
 ```
 
+This Scatterplot of Overall Pollutant Concentration by Region displays the overall concentration, calculated by taking the mean of each year for all cities in the dataset, of each pollutant  over 2003 till 2022. The x-axes represent the year and the y-axes represent the concentration of the pollutant at that year in its respective unit.
+
+The plot reveals a downward trends of NO~x~ until 2020, with concentrations appearing to drop from around 25 ppb to near 8 ppb in 2020.  This substantial decrease suggests that measures aimed at reducing emissions through regulations and increased standards have been effectively implemented over the years. On the other hand, PM~2.5~ and O~3~ do not show a steady downward trend; instead, their concentrations fluctuate over the period analyzed. These fluctuations show the challenges in the efforts of controlling pollutants that are not directly emitted but are produced by chemical interactions in the atmosphere. 
+
+## 5.3 Heatmap
 
 
 
-## Paired T-test
+# 6. Hypothesis Testing
+## 6.1 Paired T-test
 compare the value of two years (2003, 2022), x_2003, x_2022
 H_0: u_1 - u_2 = 0
 H_a: u_1 - u_2 != 0
