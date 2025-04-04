@@ -4,12 +4,9 @@ title: Investigation of NO~X~, PM~2.5~, and O~3~  (ppm) trends in Ontario from 2
 author: "Mohamad Damaj - 10109, Moham An, Jo Zhu"
 date: "2025-03-18"
 output:
-  pdf_document: default
   html_document:
     theme: lumen
-header-includes:
-  - \usepackage{caption}
-  - \captionsetup{font={small}}
+  pdf_document: default
 ---
 
 ```{r setup, include=FALSE}
@@ -21,7 +18,6 @@ knitr::opts_chunk$set(echo = TRUE)
 library(tidyverse)
 library(readxl)
 library(lubridate)
-library(kableExtra)
 library(ggplot2)
 library(lubridate)
 library(knitr)
@@ -35,6 +31,11 @@ library(naniar)
 NOX <- read_excel("./data/NOX.xlsx", skip = 3)
 O3 <- read_excel("./data/O3.xlsx", skip = 3)
 PM25 <- read_excel("./data/PM25.xlsx", skip = 5)
+SO2 <- read_excel("./data/SO2.xlsx", , skip = 7)
+
+miss_var_summary(NOX)
+miss_var_summary(O3)
+miss_var_summary(PM25)
 ```
 
 
@@ -58,14 +59,14 @@ names(NOX)
 10. 24-Hour Maximum: The highest average concentration recorded over a 24-hour period in that year.
 
 
-# 2. Background of the Data
+## 2. Background of the Data
 
 The data used in this analysis was collected across various cities in Ontario, throughout the period from 2003 to 2022. These measurements were compiled and made available by the Ontario Ministry of the Environment, Conservation and Parks. 
 
 The information is publically avaliable and is helpful in assiting researchers, policymakers, and public health officials to investigate air quality trends, evaluate the impact of environmental regulations, and inform policy decisions. It provides a long-term view of pollutant levels in various cities in Ontario, allowing for improving environmental and public health outcomes in Ontario.
 
 
-# 3. Overall Research Question
+## 3. Overall Research Question
 
 The aim of this paper is to investigate the spatial and temporal trends of air pollutants (NO~X~, O~3~, and PM~2.5~) across various Ontario cities from 2003 to 2022. 
 
@@ -75,10 +76,11 @@ The aim of this paper is to investigate the spatial and temporal trends of air p
 
 3. How do the four pollutants correlate with each other across different cities and years, and what might this indicate about broader air quality patterns?
 
-4. How do the four pollutants project into future years based on current trends?
 
 
+## 4. Data Evaluation
 
+In order to view the pollutant concentration changes by region, we grouped the cities by region based on the map of Ontario from the Ministry of Natural Resources and Forestry, and calculated the mean of the cities in each region grouped by year.
 
 
 ```{r, include=FALSE}
@@ -99,12 +101,11 @@ city_to_region <- data.frame(
     "St. Catherines",
     "Port Stanley",
     "Essex",
+    
+    # Hamilton
     "Hamilton Mountain",
     "Hamilton Downtown",
     "Hamilton West",
-    "Guelph",
-
-    
     
     # GTA (Greater Toronto Area) - including Halton/Peel/York/Durham
     "Toronto Downtown",
@@ -120,7 +121,10 @@ city_to_region <- data.frame(
     "Milton",
     "Etobicoke West",
     "Stouffville",
+    
+    # Central Ontario
     "Barrie",
+    "Guelph",
     "Parry Sound",
     "Peterborough",
     
@@ -156,35 +160,37 @@ city_to_region <- data.frame(
     "Western Ontario",
     "Western Ontario",
     "Western Ontario",
-    "Western Ontario",
-    "Western Ontario",
-    "Western Ontario",
-    "Western Ontario",
-
 
 
     
+    # Hamilton
+    "Hamilton",
+    "Hamilton",
+    "Hamilton",
+
+    
     # GTA
-    "Central Ontario",
-    "Central Ontario",
-    "Central Ontario",
-    "Central Ontario",
-    "Central Ontario",
-    "Central Ontario",
-    "Central Ontario",
-    "Central Ontario",
-    "Central Ontario",
-    "Central Ontario",
-    "Central Ontario",
-    "Central Ontario",
-    "Central Ontario",
+    "GTA",
+    "GTA",
+    "GTA",
+    "GTA",
+    "GTA",
+    "GTA",
+    "GTA",
+    "GTA",
+    "GTA",
+    "GTA",
+    "GTA",
+    "GTA",
+    "GTA",
 
     
     
     # Central Ontario
     "Central Ontario",
     "Central Ontario",
-
+    "Central Ontario",
+    
     # Eastern Ontario
     "Eastern Ontario",
     "Eastern Ontario",
@@ -214,15 +220,18 @@ O3 = O3 %>% mutate(Mean = as.numeric(Mean)) %>%
   filter(Year >= 2003)
 PM25 = PM25 %>% mutate(Mean = as.numeric(Mean)) %>% 
   mutate(Year = as.integer(Year)) %>%  filter(Year >= 2003)
+#view(PM25)
 ```
 
-```{r, echo = F}
+## NA imputing (TODO: decide what to do with this later)
+```{r}
 O3 = O3 %>% drop_na(Mean)
 NOX = NOX %>% drop_na(Mean)
 PM25 = PM25 %>% drop_na(Mean)
 ```
 
-```{r, echo = F}
+## Grouping in Regions
+```{r}
 NOX = NOX %>% left_join(city_to_region, by = "City")
 O3 = O3 %>% left_join(city_to_region, by = "City")
 PM25 = PM25 %>% left_join(city_to_region, by = "City")
@@ -230,154 +239,46 @@ PM25 = PM25 %>% left_join(city_to_region, by = "City")
 
 ```
 
-
-```{r, echo = F}
-# Make tables
-# Mean per years for that particulate matter
-
-NOX_City_mean <- NOX %>% group_by(City) %>% summarise(Mean = mean(Mean))
-
-
-O3_City_mean <- O3 %>% group_by(City) %>% summarise(Mean = mean(Mean))
-PM25_City_mean <- PM25 %>% group_by(City) %>% summarise(Mean = mean(Mean))
-
-
-```
-
-
-# 4. Tables
-
-
-## 4.1 The Top 10 Cities With the Highest Pollutant Concentration (in ppm)
-
-
-```{r, echo = F, results='asis'}
-
-NOX_table <- kable(NOX_City_mean %>% mutate(Mean = round(Mean, 2)) %>% arrange(desc(Mean)) %>% head(10), "latex")
-O3_table <- kable(O3_City_mean %>% mutate(Mean = round(Mean, 2)) %>% arrange(desc(Mean)) %>% head(10), "latex")
-PM25_table <- kable(PM25_City_mean %>% mutate(Mean = round(Mean, 2)) %>% arrange(desc(Mean)) %>% head(10), "latex")
-cat("
-\\begin{table}[ht]
-\\begin{minipage}[t]{0.3\\linewidth}
-\\captionsetup{labelformat=empty, labelsep=none}
-\\caption{NO$_{X}$ Table}
-", NOX_table, "
-\\end{minipage}
-\\hfill
-\\begin{minipage}[t]{0.3\\linewidth}
-\\captionsetup{labelformat=empty, labelsep=none}
-\\caption{O$_{3}$ Table}
-", O3_table, "
-\\end{minipage}
-\\hfill
-\\begin{minipage}[t]{0.3\\linewidth}
-\\captionsetup{labelformat=empty, labelsep=none}
-\\caption{PM$_{2.5}$ Table}
-", PM25_table, "
-\\end{minipage}
-\\setcounter{table}{0}
-\\caption{Top 10 Cities with Highest Concentration of Each Pollutant (in ppm)}
-\\end{table}
-")
-
-
-
-```
-
-The table above is three separate tables each one for a respective pollutant, they are sorted in descending order and only the top 10 are being shown based on the overall Mean of the City, over all years from 2003 to 2022; as such, the cities with the high concentration (in ppm) will be listed first. Therefore, we can draw a few key observations about pollutant concentrations across these Ontario cities:
-
-  - The highest mean NO~x~ readings (31.32 ppm) appear at Toronto West, followed closely by other Toronto stations (Toronto East, Toronto Downtown) and industrial/urban areas like Hamilton and Windsor.
-  
-  - Port Stanley shows the highest O~3~ levels (32.84 ppm), with other high concentrations at Tiverton, Grand Bend, and Parry Sound—generally smaller or semi-rural communities.
-  
-  - Sarnia tops the PM~2.5~ list (9.57 ppm), followed by Windsor (West and Downtown) and Hamilton stations, reflecting the influence of industrial facilities and cross-border pollution.
-
-
-
-
- 
-
-```{r, include = F}
+```{r}
 NOX_Region = NOX %>% group_by(Year, Region) %>% summarise(Mean = mean(Mean))
 O3_Region = O3 %>% group_by(Year, Region) %>% summarise(Mean = mean(Mean))
 PM25_Region = PM25 %>% group_by(Year, Region) %>% summarise(Mean = mean(Mean))
 
 
+
 ```
-# 4.2 The Top 10 Regions and Years with Highest Concentration of Each Pollutant (in ppm)
+```{r}
+kable(list(NOX_Region %>% arrange(desc(Mean)) %>% head(10), O3_Region %>% arrange(desc(Mean)) %>% head(10), PM25_Region %>% arrange(desc(Mean)) %>% head(10))) 
 
-In order to view the pollutant concentration changes by region, we grouped the cities by region based on the map of Ontario from the Ministry of Natural Resources and Forestry, and calculated the mean of the cities in each region grouped by year.
+```
+```{r}
+library(knitr)
+library(kableExtra)
+library(dplyr)
 
-```{r, results='asis', echo=FALSE}
+# Create styled tables for each region table
+table_list <- list(
+  NOX_Region %>% arrange(desc(Mean)) %>% head(10),
+  O3_Region %>% arrange(desc(Mean)) %>% head(10),
+  PM25_Region %>% arrange(desc(Mean)) %>% head(10)
+)
 
+# For each table in the list, apply kable and styling
+styled_tables <- lapply(table_list, function(tbl) {
+  kable(tbl) %>% 
+    kable_styling(bootstrap_options = c("striped", "hover", "condensed"))
+})
 
-# Create the LaTeX tables without caption
-NOX_tab  <- kable(NOX_Region  %>% mutate(Mean = round(Mean, 2)) %>% arrange(desc(Mean)) %>% head(10), "latex")
-O3_tab   <- kable(O3_Region   %>% mutate(Mean = round(Mean, 2)) %>% arrange(desc(Mean)) %>% head(10), "latex")
-PM25_tab <- kable(PM25_Region %>% mutate(Mean = round(Mean, 2)) %>% arrange(desc(Mean)) %>% head(10), "latex")
-
-# Print side-by-side minipages with captions added via \captionof
-cat("
-\\begin{table}[ht]
-\\begin{minipage}[t]{0.3\\linewidth}
-\\captionsetup{labelformat=empty, labelsep=none}
-\\caption{NO$_{X}$ Table}
-", NOX_tab, "
-\\end{minipage}
-\\hfill
-\\begin{minipage}[t]{0.3\\linewidth}
-\\captionsetup{labelformat=empty, labelsep=none}
-\\caption{O$_{3}$ Table}
-", O3_tab, "
-\\end{minipage}
-\\hfill
-\\begin{minipage}[t]{0.3\\linewidth}
-\\captionsetup{labelformat=empty, labelsep=none}
-\\caption{PM$_{2.5}$ Table}
-", PM25_tab, "
-\\end{minipage}
-\\setcounter{table}{1}
-\\caption{Top 10 Regions and Years with Highest Concentration of Each Pollutant (in ppm)}
-\\end{table}
-# ")
-
-
-
-
+# Optionally, you can display the styled tables in your R Markdown or Shiny app.
+# For example, if you are using R Markdown, each table will be rendered one after another.
+styled_tables
 
 ```
 
 
 
 
-
-
-
-
-```{r, echo = F}
-NOX_Yearly_Mean = NOX %>% group_by(Year) %>% summarise("Mean NOX" = mean(Mean))
-O3_Yearly_Mean = O3 %>% group_by(Year) %>% summarise("Mean O3" = mean(Mean))
-PM25_Yearly_Mean = PM25 %>% group_by(Year) %>% summarise("Mean PM25" = mean(Mean))
-
-
-
-head(kable(NOX_Yearly_Mean))
-```
-
-
-
-## Same thing w NAs, we prob should na.rm when we use mean O-O
-```{r, echo = F}
-# Making one big table of Pollutant by City 
-
-Yearly_Means = list(NOX_Yearly_Mean, PM25_Yearly_Mean, O3_Yearly_Mean)
-
-Combined_Yearly_Mean = reduce(Yearly_Means, full_join, by = "Year")
-kable(Combined_Yearly_Mean %>% head(10))
-
-```
-
-```{r, echo = F}
+```{r}
 ggplot(NOX_Region, aes(x = Year, y = Mean, col = Region)) + geom_line() + facet_wrap(~ Region)
 ggplot(O3_Region, aes(x = Year, y = Mean, col = Region)) + geom_line() + theme(legend.position="none") + facet_wrap(~ Region) 
 ggplot(PM25_Region, aes(x = Year, y = Mean, col = Region)) + geom_line() + theme(legend.position="none") + facet_wrap(~ Region)
@@ -385,7 +286,7 @@ ggplot(PM25_Region, aes(x = Year, y = Mean, col = Region)) + geom_line() + theme
 ```
 
 ## Map cities
-```{r, echo = F}
+```{r}
 NOX_LL = read_excel("./data/NOX_LL.xlsx")
 NOX_LL = NOX_LL %>% filter(Longitude < -50)
 NOX_map = ggplot(NOX_LL, aes(Longitude, Latitude)) + 
@@ -395,16 +296,123 @@ NOX_map
 ```
 
 
-```{r, echo = F}
+
+Tables
+```{r}
+# Make tables
+# Mean per years for that particulate matter
+
+NOX_City_mean = NOX %>% group_by(City) %>% summarise("Mean NOX" = mean(Mean))
+
+# kable(NOX_City_mean)
+
+SO2_City_mean = SO2 %>% group_by(City) %>% summarise("Mean SO2" = mean(Mean))
+O3_City_mean = O3 %>% group_by(City) %>% summarise("Mean O3" = mean(Mean))
+PM25_City_mean = PM25 %>% group_by(City) %>% summarise("Mean PM25" = mean(Mean))
+
+```
+
+## Need To Decide What to do with the NAs, left_join? or smthn?
+```{r}
+# Making one big table of Pollutant by City 
+
+City_Means = list(NOX_City_mean, PM25_City_mean, SO2_City_mean, O3_City_mean)
+
+Combined_City_Mean = reduce(City_Means, full_join, by = "City")
+head(kable(Combined_City_Mean))
+
+```
+
+```{r}
+NOX_Yearly_Mean = NOX %>% group_by(Year) %>% summarise(mean.nox = mean(Mean))
+O3_Yearly_Mean = O3 %>% group_by(Year) %>% summarise(mean.o3 = mean(Mean))
+PM25_Yearly_Mean = PM25 %>% group_by(Year) %>% summarise(mean.pm25 = mean(Mean))
+SO2_Yearly_Mean = SO2 %>% group_by(Year) %>% summarise("Mean SO2" = mean(Mean))
+
+
+
+head(kable(NOX_Yearly_Mean))
+```
+
+
+
+## Same thing w NAs, we prob should na.rm when we use mean O-O
+```{r}
+# Making one big table of Pollutant by City 
+
+Yearly_Means = list(NOX_Yearly_Mean, PM25_Yearly_Mean, O3_Yearly_Mean)
+
+Combined_Yearly_Mean = reduce(Yearly_Means, full_join, by = "Year")
+kable(Combined_Yearly_Mean %>% head(10))
+miss_var_summary(Combined_Yearly_Mean)
+```
+
+# {NUMBER} Regressions
+## Analyzing the relationship of pollutants with eachother and the year
+
+In order to analyze the relationship of a pollutant with other pollutants and the year, we would treat the year and two pollutants as continuous variables to fit a regression. For example, if we were examining the relationship between mean NOX level and the year, the mean O3 level and the mean PM25 level, we will take the logarithm of the mean NOX level as the dependent variable and the year, the mean O3 level and the mean PM25 level all as the independent variable. 
+
+```{r, echo=FALSE}
+NOX_other_pollutant_model = lm(formula(log(mean.nox)~Year + mean.pm25 + mean.o3), data = Combined_Yearly_Mean)
+summary(NOX_other_pollutant_model)
+```
+## Explanation 
+From the linear model, it suggests that their is a strong relationship between the logarithm of the mean NOX level and the year, the mean PM25 level and the mean O3 level. In particular, by analyzing the p-values of each parameter, it can be seen that the year parameter is especially significant and that the mean PM25 and O3 levels have moderate significance on the logarithm of the mean NOX level in comparison. The coefficient of determination ($R^2$) of 0.9584 suggests that 95.84% of the variables in the logarithm of the mean NOX level can be explained by the model. 
+
+## Interpreting regression parameters
+Here, the regression parameters refer to the coefficients of the independent variables of the model. 
+
+1) Intercept
+    - The intercept coefficient expresses the value of the dependent variable (logarithm of the mean NOX level) when all other features are equal to 0. In this case, an intercept of ~105.54 suggests that the logarithm of the mean NOX level is equal to ~105.54 when all independent variables are equal to 0.
+  
+2) Year, mean PM25 level, and mean O3 level
+    - The coefficient for Year expresses the linear effect of the Year parameter. Specifically, a coefficient of       -0.050621 suggests that as the Year increases by 1, the logarithm of the mean NOX level decreases by 0.050621. Similarly, a coefficient for the mean PM25 level of 0.062955 and a coefficient for the mean O3 level of -0.058456 suggests that as the mean PM25 level increases by 1 and the mean O3 level increases by 1 there will be an increase in the logarithm of the mean NOX level by 0.062955 and a decrease in the logarithm of the mean NOX level by 0.058456, respectively. 
+
+Overall, this model suggests a strong linear relationship between the logarithm of the mean NOX level and the year, the mean PM25 level and the mean O3 level. In other words, this model also explains that the mean NOX level has an exponential relationship with the features used, in particular an exponential decay relationship with the year. 
+
+
+- make regressions for mean plots
+  - analyze and interpret them
+- cross validation
+- bootstrap for something
+  - use bootstrapping to find the conf interval of average of mean pollutant values
+```{r}
+NOX_other_pollutant_model = lm(formula(mean.nox~Year + mean.pm25 + mean.o3), data = Combined_Yearly_Mean)
+summary(NOX_other_pollutant_model)
+library(cowplot)
+# fitting degree one exponential 
+NOX_degree = 1
+NOX_model <- lm(formula=log(mean.nox)~poly(Year, degree=NOX_degree, raw=TRUE), data=NOX_Yearly_Mean)
+summary(NOX_model)
+
+# fitting degree two polynomial
+NOX_model2 <- lm(formula=mean.nox~poly(Year, degree=2, raw=TRUE), data=NOX_Yearly_Mean)
+summary(NOX_model2)
+NOX_plot <- ggplot(NOX_Yearly_Mean, aes(x = Year, y = log(mean.nox))) + geom_point() + stat_smooth(method=lm, formula=(y~poly(x, degree=NOX_degree, raw=TRUE)))
+NOX_plot
+
+O3_degree = 1
+O3_model <- lm(formula=Year~poly(mean.o3, degree=O3_degree, raw=TRUE), data=O3_Yearly_Mean)
+summary(O3_model)
+O3_plot <- ggplot(O3_Yearly_Mean, aes(x = Year, y = mean.o3)) + geom_point() + stat_smooth(method=lm, formula=(y~poly(x, degree=O3_degree, raw=TRUE)))
+O3_plot
+
+PM25_degree = 5
+PM25_model <- lm(formula=Year~poly(mean.pm25, degree=PM25_degree, raw=TRUE), data=PM25_Yearly_Mean)
+summary(PM25_model)
+PM25_plot <- ggplot(PM25_Yearly_Mean, aes(x = Year, y = mean.pm25)) + geom_point() + stat_smooth(method=lm, formula=(y~poly(x, degree=PM25_degree, raw=TRUE)))
+PM25_plot
+plot_grid(NOX_plot, O3_plot, PM25_plot)
+
 Graphing_Yearly_Means <- Combined_Yearly_Mean %>% 
                pivot_longer(cols = starts_with("Mean"),
                names_to = "Pollutant",
                values_to = "Value")
+head(Graphing_Yearly_Means)
+#head(kable(Graphing_Yearly_Means))
 ggplot(Graphing_Yearly_Means, 
        aes(x = Year, y = Value, 
            col = factor(Pollutant, 
-                        levels = c("Mean NOX", "Mean O3", "Mean PM25"), 
-                        labels = c("NOX", "O3", "PM25")))) + 
                         levels = c("Mean NOX", "Mean O3", "Mean PM25"), 
                         labels = c("NOX", "O3", "PM25")))) + 
       geom_point() +
@@ -412,31 +420,160 @@ ggplot(Graphing_Yearly_Means,
       labs(col = "Pollutants")
 ```
 
+# {NUMBER}. Cross Validation
+## Further analyzing the relationships of pollutants with eachother and the year
+
+Previously, we analyzed the regression parameters to see how well our model performed on our data set. In this case, we will further analyze the relationships of pollutants with each other and the year by performing cross validation. 
+
+Specifically, we will analyze the relationship between PM25 and the other pollutants alongside the year by using k-fold cross validation. To perform k-fold cross validation, we will split the data set into k even pieces and use each $i^{th}$ fold to check the validity of our model that is trained on the remaining $k-1$ folds by taking predictions using the data in the $i^{th}$ fold. This process will be repeated for each fold of the data set, a mean squared error (MSE) will be calculated for each fold, and an average of the MSE's will be taken at the end.
+
+```{r, echo=FALSE}
+set.seed(123)
+k_fold_mse = rep(0, 5)
+# Split data into 5 folds
+Combined_Yearly_Mean <- Combined_Yearly_Mean %>% mutate(group_ind = sample(c(1:5),size=nrow(Combined_Yearly_Mean), replace=TRUE))
+
+for (i in 1:5) {
+  # train on fold all fold not i then test on fold i 
+  train_set <- Combined_Yearly_Mean %>% filter(group_ind != i)
+  test_set <- Combined_Yearly_Mean %>% filter(group_ind == i)
+  NOX_other_pollutant_model = lm(formula(mean.pm25~Year + mean.nox + mean.o3), data = train_set)
+  pred = predict(NOX_other_pollutant_model, newdata=test_set)
+  mse = mean((test_set$mean.pm25 - pred)^2)
+  k_fold_mse[i] = mse
+}
+cat("The average MSE is:", mean(k_fold_mse), "\n")
+```
+## Conclusion on results
+The average MSE from the k-fold cross validation was 0.5452296 which is relatively low and maybe indicate the moderate predicting power of the linear model where the mean PM25 level was the dependent variable and the year, the mean NOX level and the mean O3 level were the independent variables. This suggests that there is likely a linear relationship between the mean PM25 level and the year, the mean NOX level and the mean O3 level.
 
 
 
+```{r}
+# train test cross validation 
+set.seed(123)
+Combined_Yearly_Mean <- Combined_Yearly_Mean %>% mutate(group_ind = sample(c("train", "test"), prob = c(0.6, 0.4),  size=nrow(Combined_Yearly_Mean), replace=TRUE))
+Combined_Yearly_Mean
+
+train_set = Combined_Yearly_Mean %>% filter(group_ind == "train")
+test_set = Combined_Yearly_Mean %>% filter(group_ind == "test")
+
+NOX_other_pollutant_model = lm(formula(log(mean.nox)~Year + mean.pm25 + mean.o3), data = train_set)
+summary(NOX_other_pollutant_model)
+
+pred = predict(NOX_other_pollutant_model, newdata=test_set)
+pred
+mse = mean((log(test_set$mean.nox) - pred)^2)
+cat("MSE:", mse, "\n")
+```
+
+# K Fold cross validation 
+```{r}
+set.seed(123)
+k_fold_mse = rep(0, 5)
+# Split data into 5 folds
+Combined_Yearly_Mean <- Combined_Yearly_Mean %>% mutate(group_ind = sample(c(1:5),size=nrow(Combined_Yearly_Mean), replace=TRUE))
+
+for (i in 1:5) {
+  # train on fold all fold not i then test on fold i 
+  train_set <- Combined_Yearly_Mean %>% filter(group_ind != i)
+  test_set <- Combined_Yearly_Mean %>% filter(group_ind == i)
+  NOX_other_pollutant_model = lm(formula(log(mean.nox)~Year + mean.pm25 + mean.o3), data = train_set)
+  pred = predict(NOX_other_pollutant_model, newdata=test_set)
+  mse = mean((log(test_set$mean.nox) - pred)^2)
+  k_fold_mse[i] = mse
+}
+mean(k_fold_mse)
+```
+
+```{r}
+set.seed(123)
+k_fold_mse = rep(0, 5)
+# Split data into 5 folds
+Combined_Yearly_Mean <- Combined_Yearly_Mean %>% mutate(group_ind = sample(c(1:5),size=nrow(Combined_Yearly_Mean), replace=TRUE))
+
+for (i in 1:5) {
+  # train on fold all fold not i then test on fold i 
+  train_set <- Combined_Yearly_Mean %>% filter(group_ind != i)
+  test_set <- Combined_Yearly_Mean %>% filter(group_ind == i)
+  NOX_other_pollutant_model = lm(formula(mean.pm25~Year + mean.nox + mean.o3), data = train_set)
+  pred = predict(NOX_other_pollutant_model, newdata=test_set)
+  mse = mean((test_set$mean.pm25 - pred)^2)
+  k_fold_mse[i] = mse
+}
+mean(k_fold_mse)
+```
+
+
+```{r}
+set.seed(123)
+k_fold_mse = rep(0, 5)
+# Split data into 5 folds
+Combined_Yearly_Mean <- Combined_Yearly_Mean %>% mutate(group_ind = sample(c(1:5),size=nrow(Combined_Yearly_Mean), replace=TRUE))
+
+for (i in 1:5) {
+  # train on fold all fold not i then test on fold i 
+  train_set <- Combined_Yearly_Mean %>% filter(group_ind != i)
+  test_set <- Combined_Yearly_Mean %>% filter(group_ind == i)
+  NOX_other_pollutant_model = lm(formula(mean.o3~Year + mean.nox + mean.pm25), data = train_set)
+  pred = predict(NOX_other_pollutant_model, newdata=test_set)
+  mse = mean((test_set$mean.o3 - pred)^2)
+  k_fold_mse[i] = mse
+}
+mean(k_fold_mse)
+```
+# {NUMBER}. Bootstrapping
+## Estimating the average mean of pollutants in 2022
+To estimate the average mean of pollutants in 2022, we can use bootstrapping to find a 95% confidence interval of the mean pollutants of the cities. 
+
+In order to use bootstrapping to find a 95% confidence interval, we will repeated take samples of the pollutants filtered for only the year 2022 and calculate the mean of each sample. This process of re-sampling will be repeated 1000 times to produce a sampling distribution for each pollutant. From the sample distribution, we can find 2.5% and 97.5% quantile. 
+
+```{r, echo=FALSE}
+# Estimating the average of the Mean NOX over year X
+# Set random seed so that results are reproduceable
+set.seed(123)
+
+# Filter datasets for only the year 2022
+NOX_2022 <- NOX %>% filter(Year == 2022) %>% select(Mean)
+O3_2022 <- O3 %>% filter(Year == 2022) %>% select(Mean)
+PM25_2022 <- PM25 %>% filter(Year == 2022) %>% select(Mean)
+
+# Bootstrap function that will repeated take samples
+boot_function <- function() {
+  boot_sample_NOX = sample_n(NOX_2022, nrow(NOX_2022), replace=T)
+  boot_sample_O3 = sample_n(O3_2022, nrow(O3_2022), replace=T)
+  boot_sample_PM25 = sample_n(PM25_2022, nrow(PM25_2022), replace=T)
+  return (c(mean(boot_sample_NOX$Mean), mean(boot_sample_O3$Mean), mean(boot_sample_PM25$Mean)))
+}
+
+# Combine all bootstrap means into a dataframe
+bootstrap_bar = as.data.frame(replicate(1000, boot_function()))
+columns = c("NOX", "O3", "PM25")
+for (i in 1:3) {
+  # Flatten rows of dataframe into a column vectors
+  vec = as.vector(as.matrix(bootstrap_bar[i,]))
+  # Find the 2.5% and 97.5% quantile 
+  conf = quantile(vec, c(0.025, 0.975))
+  cat("95% confidence interval for", columns[i], "is", "[", conf[1], ",", conf[2], "]", "\n")
+}
+```
 ## Paired T-test
 compare the value of two years (2003, 2022), x_2003, x_2022
 H_0: u_1 - u_2 = 0
 H_a: u_1 - u_2 != 0
 
-```{r, echo = F}
-# find 2003, 2022
-values.2003 = NOX %>% filter(Year == 2003) %>% select(City, Mean)
-values.2022 = NOX %>% filter(Year == 2022) %>% select(City, Mean)
-values = left_join(values.2003, values.2022, by="City")
-values = values %>% mutate(diff = Mean.x - Mean.y)
-t.test(values$diff)
-```
-```{r, echo = F}
-# find 2003, 2022
-values.2003 = O3 %>% filter(Year == 2003) %>% select(City, Mean)
-values.2022 = O3 %>% filter(Year == 2022) %>% select(City, Mean)
-values = left_join(values.2003, values.2022, by="City")
-values = values %>% mutate(diff = Mean.x - Mean.y)
-t.test(values$diff)
-```
-```{r, echo = F}
+
+# Hypothesis Testing
+## Comparing the mean pollutant level in 2003 and 2022 in each city 
+
+We would like to see if there is a difference between the mean pollutant level in each city in 2003 compared to 2022 (and if there is a difference, what kind of difference is present). For this test, since some cities stopped reporting over the years, we will only match up cities who have reported in both 2003 and 2022.
+
+To achieve this, we will test the following hypothesis:
+- $H_0$: the mean NOX level of cities in 2003 ($\mu_{2003}$) is equal to the mean NOX level of cities in 2022 ($\mu_{2022}$), i.e. $\mu_{2003} = \mu_{2022}$ or $\mu_{2003} - \mu_{2022} = 0$
+- $H_a$: the mean NOX level of cities in 2003 ($\mu_{2003}$) is not equal to the mean NOX level of cities in 2022 ($\mu_{2022}$), i.e. $\mu_{2003} \neq \mu_{2022}$ or $\mu_{2003} - \mu_{2022} \neq 0$
+
+To perform the test, we will perform a paired two sample t-test to see if the pollutant levels in each city has changes over the years. This can be done by taking the difference between the mean pollutant levels in each city in 2003 and in 2022 then performing a one sample t-test on the difference in mean pollutant levels.
+```{r, echo=FALSE}
 # find 2003, 2022
 values.2003 = PM25 %>% filter(Year == 2003) %>% select(City, Mean)
 values.2022 = PM25 %>% filter(Year == 2022) %>% select(City, Mean)
@@ -444,6 +581,5 @@ values = left_join(values.2003, values.2022, by="City")
 values = values %>% mutate(diff = Mean.x - Mean.y)
 t.test(values$diff)
 ```
-
-
-
+## Evaluation 
+The one sample t-test of the difference between the mean pollutant level in different cities in 2003 and 2022 shows a significant change in the mean pollutant levels in different cities over the years. The p-value of 4.748e-08 being less than 0.0001 suggests that there is significant evidence against the null hypothesis of there being no difference in the mean pollutant level in different cities over time. Likewise, since the null hypothesis of 0 is not within the 95% confidence interval of (1.050617, 1.844383), we have further evidence against the null hypothesis. Therefore, we can confidently reject the null hypothesis and conclude that over the years, there has been a change in the mean pollutant level in different cities in Canada.
