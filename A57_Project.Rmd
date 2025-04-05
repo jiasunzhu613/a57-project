@@ -1,19 +1,24 @@
 ---
-title: Investigation of NO~x~ (in ppb), O~3~ (in ppb), and PM~2.5~ (in µg/m3) trends in Ontario from 2003
-  to 2022
-author: "Mohamad Damaj - 10109, Moham An, Jo Zhu"
+title: "Investigation of NO~x~ (in ppb), O~3~ (in ppb), and PM~2.5~ (in µg/m3) trends in Ontario from 2003 to 2022"
+Course: "STAA57"
+instructor: "Professor Shams"
+
+author: "Mohamad Damaj - 1010952765, Mohammad Anwar - 1010927561, Jonathan Zhu - 1010864405"
 date: "2025-03-18"
 output:
-  pdf_document: default
-  html_document:
-    theme: lumen
+  pdf_document:
+    latex_engine: xelatex
+  html_document: default
 header-includes:
   - \usepackage{caption}
   - \captionsetup{font={small}}
+  - \usepackage[utf8]{inputenc}
 ---
 
+
+
 ```{r setup, include=FALSE}
-knitr::opts_chunk$set(echo = TRUE)
+# knitr::opts_chunk$set(echo = TRUE)
 ```
 
 
@@ -27,8 +32,11 @@ library(ggplot2)
 library(lubridate)
 library(knitr)
 library(stringr)
-library(tidygeocoder)
 library(gridExtra)
+library(sf)
+library(viridis)
+library(purrr)
+library(cowplot)
 
 ```
 
@@ -41,7 +49,7 @@ PM25 <- read_excel("./data/PM25.xlsx", skip = 5)
 
 # 1. Description of Datasets
 
-The datasets analyzed in this report are three, one for each of NO~x~ (in ppb), PM~2.5~ (in µg/m3), and O~3~ (in ppb), all containing the same variables. These datasets contain records of the pollutant levels from  2003 (considered the earliest of all three) to 2022. Each dataset contains detailed information of pollutant levels in the form of the following variables:
+The datasets analyzed in this report are three, one for each of NO~x~ (in ppb), PM~2.5~ (in µg/$m^3$), and O~3~ (in ppb), all containing the same variables. These datasets contain records of the pollutant levels from  2003 (considered the earliest of all three) to 2022. Each dataset contains detailed information of pollutant levels in the form of the following variables:
 
 ```{r, echo=F}
 
@@ -53,8 +61,8 @@ names(NOX)
 4. Location: A more specific description of the monitoring location (street, area).
 5. Type: The type of monitoring station or measurement protocol used.
 6. Valid Hour: The number of valid hourly measurements recorded for that pollutant in the given year.
-7. Percentiles: Percentile statistics showing the distribution of pollutant levels (in ppb, µg/m3, ppb) throughout the year.
-8. Mean: The annual average concentration of the pollutant (in ppb, µg/m3, ppb).
+7. Percentiles: Percentile statistics showing the distribution of pollutant levels (in ppb, µg/$m^3$, ppb) throughout the year.
+8. Mean: The annual average concentration of the pollutant (in ppb, µg/$m^3$, ppb).
 9. 1-Hour Maximum: The highest recorded concentration within a one-hour period during the year.
 10. 24-Hour Maximum: The highest average concentration recorded over a 24-hour period in that year.
 
@@ -70,7 +78,7 @@ The information is publically avaliable and is helpful in assiting researchers, 
 
 The aim of this paper is to investigate the spatial and temporal trends of air pollutants (NO~x~, O~3~, and PM~2.5~) across various Ontario cities from 2003 to 2022. 
 
-1. How have annual mean concentrations (in ppb, µg/m3, ppb) for each pollutant changed from 2003 to 2022, and which years show the most significant shifts?
+1. How have annual mean concentrations (in ppb, µg/$m^3$, ppb) for each pollutant changed from 2003 to 2022, and which years show the most significant shifts?
 
 2. Which cities consistently rank among the highest (or lowest) in terms of average pollutant levels, and do these rankings shift over time?
 
@@ -341,7 +349,7 @@ cat("
 \\caption{Top 10 Regions and Years with Highest Concentration of Each Pollutant}
 \\end{table}
 \\vspace{-17mm}
-# ")
+ #")
 
 ```
 
@@ -417,7 +425,7 @@ plot_O3 <- ggplot(O3_Region, aes(x = Year, y = Conc., col = Region)) +
 plot_PM25 <- ggplot(PM25_Region, aes(x = Year, y = Conc., col = Region)) + 
   geom_line() + 
   facet_wrap(~ Region) + 
-  labs(title = expression(PM[2.5] ~ "Concentration by Region"), x = "Year", y = expression("Concentration (in" ~ µg/m[3] *")")) +
+  labs(title = expression(PM[2.5] ~ "Concentration by Region"), x = "Year", y = expression("Concentration (in" ~ µg/m^3 *")")) +
   theme_minimal() +
   theme(legend.position = "none", strip.text = element_blank())
 
@@ -431,7 +439,7 @@ The graphs reveal a notable improvement in air quality over the years, with clea
 
 
 ## 5.2 Scatter Plot of Overall Pollutant Concentration by Year  
-```{r, echo = F, fig.width=10, fig.height=5}
+```{r, echo = F, fig.width=10, fig.height=7}
 
 Yearly_Means = list(NOX_Yearly_Mean, PM25_Yearly_Mean, O3_Yearly_Mean)
 
@@ -448,8 +456,8 @@ ggplot(Graphing_Yearly_Means,
                         levels = c("Conc.NOX", "Conc.O3", "Conc.PM25")))) + 
       geom_point() +
       labs(col = "Pollutant", y = "Concentration", title = "Total Concentration by Year ") + 
-  scale_color_discrete(labels = c(expression(NO[x] ~ "(in ppb)"), expression(O[3] ~ "(in ppb"), expression(PM[2.5] ~ "(in" ~ µg/m[3] *
-  ")"))) + theme(legend.position = "bottom")
+  scale_color_discrete(labels = c(expression(NO[x] ~ "(in ppb)"), expression(O[3] ~ "(in ppb)"), expression(PM[2.5] ~ "(in \u03BC" * g/m^3 *
+   ")"))) + theme(legend.position = "bottom")
 
 ```
 
@@ -459,14 +467,124 @@ The plot reveals a downward trends of NO~x~ until 2020, with concentrations appe
 
 ## 5.3 Heatmap
 
+```{r, include = F}
+group_cities <- function(data, exclude_cities){
+  grouped_data <- data %>%
+  filter(!City %in% exclude_cities) %>%  
+  # Exclude the cities from the dataset
+  bind_rows(
+    data %>%
+      # Get only the two cities we want, group their year rows, get their means and turn them into one row
+      filter(City %in% exclude_cities) %>%  
+      group_by(Year) %>%
+      # take mean of each column accross the row
+      summarise(across(where(is.numeric), ~mean(.x, na.rm = TRUE)), .groups = "drop") %>%
+      # fix the city name to be a combo of all cities
+      mutate(City = paste(exclude_cities, collapse = "-"))
+  )
+  return(grouped_data)
+}
+NOX_LL <- read_excel("./data/NOX.xlsx", skip = 3) %>% mutate(Mean = as.numeric(Mean)) %>%  
+  filter(Year >= 2003) %>% drop_na(Mean) %>% 
+  mutate(Year = as.integer(Year)) %>%
+  group_by(Year, City) %>%
+  summarise(Mean = mean(Mean, na.rm = TRUE))
+
+Ontario <- st_read("data/shape") 
+Ontario <- Ontario %>% 
+  rename(City = NAME) 
+
+st_crs(Ontario) <- 4326
+  
+subgroupings = list(c("Toronto Downtown", "Toronto East", "Toronto West", "Toronto North"), 
+                       c("Hamilton Downtown", "Hamilton West", "Hamilton Mountain"), 
+                       c("Windsor Downtown", "Windsor West"),
+                       c("Ottawa Downtown", "Ottawa Central"))
+# Define the function
+process_and_plot <- function(data, data_name) {
+  for (subgroup in subgroupings) {
+    data <- group_cities(data, subgroup)
+  }
+
+  data$City <- toupper(as.character(data$City))
+
+  merged_data <- Ontario %>%
+    left_join(data, by = "City") %>% 
+    st_as_sf()
+
+    
+  # Extract coordinates; column 1 is longitude (x)
+  coords <- st_coordinates(merged_data)
+  merged_data <- merged_data %>%
+  mutate(max_lat = map_dbl(geometry, ~ max(st_coordinates(.x)[,2]))) %>%
+  filter(max_lat <= 47) %>%
+  select(-max_lat)
+  
+  merged_data <- merged_data %>% 
+    select(Year, City, Mean, SHAPE_Area, SHAPE_Leng, geometry) 
+  # merged_data <- merged_data[ coords[, 2] < 48, ]
+  
+  # Plot
+  return( ggplot() +
+    geom_sf(data = merged_data, aes(fill = Mean)) +
+    scale_fill_viridis_c(na.value = "#D4D4D4") +
+    theme_void() +
+    labs(
+      fill = "Conc.", title = data_name
+    )) + theme(legend.position = "below")
+}
+
+datalist <- list(
+  list(NOX_LL, expression(NO[x] ~ "Concentration (in ppb)")),
+  list(O3, expression(O[3] ~ "Concentration (in ppb)")),
+  list(PM25, expression(PM[2.5] ~ "Concentration (in \u03BC" * g/m^3 * ")"))
+)
+
+```
+
+
+```{r, echo = F, warning = F, width = 10}
+# Datalist
+
+result_list <- list()  # Create an empty list
+# Loop through and call the function
+
+for (i in seq_along(datalist)) {
+  # Process each item and store the result
+  p <- process_and_plot(datalist[[i]][[1]], datalist[[i]][[2]])
+  result_list[[i]] <- p
+}
+# TODO: render the graphs side by side
+#plot_grid(result_list[[1]], result_list[[2]], result_list[[3]])
+
+#(result_list[[1]] | result_list[[2]]) / result_list[[3]] +
+ # plot_layout(guides = "collect") & theme(legend.position = "right")
+
+# Top row with two plots side by side
+top_row <- plot_grid(result_list[[1]], result_list[[2]], ncol = 2)
+
+# Bottom row: create three columns with the middle column holding the third plot, and the left/right columns empty
+bottom_row <- plot_grid(NULL, result_list[[3]], NULL, ncol = 3, rel_widths = c(1, 2, 1))
+
+# Combine the two rows into one plot grid
+final_plot <- plot_grid(top_row, bottom_row, ncol = 1)
+
+# Print the final plot
+final_plot
+
+```
+
+
+The above graphs display the mean of each respective variable across Ontario cities. From these graphs, it can be surmised that NO~x~ is more concentrated in reporting cities than O~3~, and both are more concentrated than PM~2.5~.
+
+
+
+
 
 
 # 6. Hypothesis Testing
 
-## Estimating the Average Concentration of pollutants in 2022
-
-# Hypothesis Testing
-## Comparing the mean pollutant level in 2003 and 2022 in each city 
+## Comparing the Pollutant Concentration in 2003 and 2022 in Each City 
 
 We would like to see if there is a difference between the mean pollutant level in each city in 2003 compared to 2022 (and if there is a difference, what kind of difference is present). For this test, since some cities stopped reporting over the years, we will only match up cities who have reported in both 2003 and 2022.
 
@@ -475,6 +593,10 @@ To achieve this, we will test the following hypothesis:
 - $H_a$: the mean NOX level of cities in 2003 ($\mu_{2003}$) is not equal to the mean NOX level of cities in 2022 ($\mu_{2022}$), i.e. $\mu_{2003} \neq \mu_{2022}$ or $\mu_{2003} - \mu_{2022} \neq 0$
 
 To perform the test, we will perform a paired two sample t-test to see if the pollutant levels in each city has changes over the years. This can be done by taking the difference between the mean pollutant levels in each city in 2003 and in 2022 then performing a one sample t-test on the difference in mean pollutant levels.
+
+
+\pagebreak
+
 ```{r, echo=FALSE}
 # find 2003, 2022
 values.2003 = PM25 %>% filter(Year == 2003) %>% select(City, Mean)
@@ -483,6 +605,7 @@ values = left_join(values.2003, values.2022, by="City")
 values = values %>% mutate(diff = Mean.x - Mean.y)
 t.test(values$diff)
 ```
+
 ## Evaluation 
 The one sample t-test of the difference between the mean pollutant level in different cities in 2003 and 2022 shows a significant change in the mean pollutant levels in different cities over the years. The p-value of 4.748e-08 being less than 0.0001 suggests that there is significant evidence against the null hypothesis of there being no difference in the mean pollutant level in different cities over time. Likewise, since the null hypothesis of 0 is not within the 95% confidence interval of (1.050617, 1.844383), we have further evidence against the null hypothesis. Therefore, we can confidently reject the null hypothesis and conclude that over the years, there has been a change in the mean pollutant level in different cities in Canada.
 
@@ -519,15 +642,23 @@ boot_function <- function() {
 
 # Combine all bootstrap means into a dataframe
 bootstrap_bar = as.data.frame(replicate(1000, boot_function()))
-columns = c("NOX", "O3", "PM25")
+columns = c("NOx", "O3", "PM2.5")
 datasets = c(NOX_2022, O3_2022, PM25_2022)
 for (i in 1:3) {
   # Flatten rows of dataframe into a column vectors
   vec = as.vector(as.matrix(bootstrap_bar[i,]))
   # Find the 2.5% and 97.5% quantile 
   conf = quantile(vec, c(0.025, 0.975))
-  cat(i, ")", "Mean", columns[i], "concentration of:", mean(datasets[i]$Mean), ",",  "95% confidence interval for", columns[i], "is", "[", conf[1], ",", conf[2], "]", "\n")
+  output <- paste(i, ")", "Mean", columns[i], "concentration of:",
+                  round(mean(datasets[i]$Mean), 6), ",",
+                  "95% confidence interval for", columns[i],
+                  "is", "[", round(conf[1],6), ",", round(conf[2],6), "]")
+  
+  wrapped_output <- str_wrap(output, width = 83)
+  cat(wrapped_output, "\n\n")
 }
+
+
 ```
 Based on the result, we have: 
 
@@ -596,11 +727,358 @@ The average MSE from the k-fold cross validation was 0.5452296 which is relative
 
 # 10. Summary of Research
 
+Below are the key findings from the analysis:
 
+  - Our investigation into the trends of NO~x~ (in ppb), O3 (in ppb), and PM~2.5~ (in µg/m^3) in Ontario from 2003 to 2022 has yielded several important insights into both temporal and spatial patterns in air quality across the province.
+  
+  - The annual mean concentrations reveal that NO~x~ levels peaked in 2003 and have steadily declined over the years, with a marked reduction by 2020. PM~2.5~ concentrations also significantly declining from the early to mid-2000s, suggesting effective emission controls and cleaner technologies.
+  
+  - O3 levels have remained relatively stable, with only minor fluctuations around 2010–2012, largely because O~3~ is a secondary pollutant formed by chemical reactions that depend on environmental and chemical factors.
+  
+  - Analysis of the top 10 cities by mean concentration shows that major urban centers—such as Toronto and Hamilton—consistently rank among the highest for NO~x~, while Sarnia, Windsor, and Hamilton stand out for PM~2.5~. Smaller or semi-rural communities (e.g., Port Stanley, Tiverton) tend to show the highest O~3~ levels.
+  
+  - The scatter plots and regression analyses indicate a strong correlation between NO~x~ and the other pollutants when viewed over time. Both NO~x~ and PM~2.5~ exhibit clear downward trends, whereas O~3~ remains more variable.
+  
+  - A regression model using the logarithm of NO~x~ as the dependent variable confirms that PM2.5, O3, and the year are significant predictors (R^2 ≈ 0.96). This underscores how reducing primary pollutants (NO~x~) can improve PM~2.5~ levels but has a less pronounced impact on O~3~, given the latter’s complex atmospheric formation.
+  
+  - Extrapolating from current trends suggests that NO~x~ and PM~2.5~ concentrations will continue to decline if emission controls and cleaner technologies persist. However, O~3~ may remain relatively stable unless additional targeted measures are implemented.
+  
+  
 
 
 # 11. Appendix
 
+
+
+```{r eval=FALSE, echo=TRUE, fig.width=8.2, message=FALSE, warning=FALSE, out.width="100%", results='hide'}
+# Loading libraries
+library(tidyverse)
+library(readxl)
+library(patchwork)
+library(lubridate)
+library(kableExtra)
+library(ggplot2)
+library(lubridate)
+library(knitr)
+library(stringr)
+library(gridExtra)
+library(sf)
+library(viridis)
+library(purrr)
+library(cowplot)
+
+# Reading in all data excel files
+NOX <- read_excel("./data/NOX.xlsx", skip = 3)
+O3 <- read_excel("./data/O3.xlsx", skip = 3)
+PM25 <- read_excel("./data/PM25.xlsx", skip = 5)
+# 1. Description of the Dataset Columns
+names(NOX)
+# 2. Background of the Data: No code for this section
+# 3. Overall Research Question 
+# Create a dataframe that contains the mapping of each city to it's region
+city_to_region <- data.frame(City = c(
+    # Western Ontario
+    "Windsor West","Windsor Downtown","Windsor North","Grand Bend","London",
+    "Chatham","Sarnia","Brantford","Kitchener",
+    "St. Catharines","St. Catherines","Port Stanley","Essex","Hamilton Mountain",
+    "Hamilton Downtown","Hamilton West","Guelph",
+    # Central Ontario
+    "Toronto Downtown","Toronto East","Toronto North","Toronto West","Burlington",
+    "Oakville","Oshawa","Brampton","Mississauga",
+    "Newmarket","Milton","Etobicoke West","Stouffville","Barrie","Parry Sound",
+    "Peterborough",
+    # Eastern Ontario
+    "Ottawa Downtown","Ottawa Central","Kingston","Tiverton","Belleville",
+    "Cornwall","Dorset","Petawawa","Morrisburg",
+    # Northern Ontario
+    "Sudbury","Sault Ste. Marie","North Bay","Thunder Bay"
+  ),Region = c(
+      rep("Western Ontario", 17),
+      rep("Central Ontario", 15),
+      rep("Eastern Ontario", 10),
+      rep("Northern Ontario", 4)), stringsAsFactors = FALSE)
+# Mutate datasets to have numeric means, years, and only contain data from 2003 onwards
+NOX = NOX %>% mutate(Mean = as.numeric(Mean)) %>%  
+  filter(Year >= 2003)
+O3 = O3 %>% mutate(Mean = as.numeric(Mean)) %>%  
+  filter(Year >= 2003)
+PM25 = PM25 %>% mutate(Mean = as.numeric(Mean)) %>% 
+  mutate(Year = as.integer(Year)) %>%  filter(Year >= 2003)
+# Remove all rows with a non-numeric mean
+O3 = O3 %>% drop_na(Mean)
+NOX = NOX %>% drop_na(Mean)
+PM25 = PM25 %>% drop_na(Mean)
+# Join all data to city-region-mapping to convert cities into regions
+NOX = NOX %>% left_join(city_to_region, by = "City")
+O3 = O3 %>% left_join(city_to_region, by = "City")
+PM25 = PM25 %>% left_join(city_to_region, by = "City")
+
+# Make tables
+# Mean per years for that particulate matter
+NOX_City_mean <- NOX %>% group_by(City) %>% summarise(Conc. = mean(Mean))
+O3_City_mean <- O3 %>% group_by(City) %>% summarise(Conc. = mean(Mean))
+PM25_City_mean <- PM25 %>% group_by(City) %>% summarise(Conc. = mean(Mean))
+
+# 4. Tables
+# 4.1 The Top 10 Cities With the Highest Pollutant Concentration
+# Display tables of most relevant cities from datasets arranged in descending order 
+NOX_table <- kable(NOX_City_mean %>% mutate(Conc. = round(Conc., 2)) %>% 
+                     arrange(desc(Conc.)) %>% head(10), "latex")
+O3_table <- kable(O3_City_mean %>% mutate(Conc. = round(Conc., 2)) %>% 
+                    arrange(desc(Conc.)) %>% head(10), "latex")
+PM25_table <- kable(PM25_City_mean %>% mutate(Conc. = round(Conc.,2)) %>% 
+                      arrange(desc(Conc.)) %>% head(10), "latex")
+# Summarise data by determining the mean of each region over all years
+NOX_Region = NOX %>% group_by(Year, Region) %>% summarise(Conc. = mean(Mean))
+O3_Region = O3 %>% group_by(Year, Region) %>% summarise(Conc. = mean(Mean))
+PM25_Region = PM25 %>% group_by(Year, Region) %>% summarise(Conc. = mean(Mean))
+
+# 4.2 The Top 10 Regions and Years with Highest Concentration of Each Pollutant
+# Display tables from datasets of the most relevant regions arranged in descending order 
+NOX_tab  <- kable(NOX_Region  %>% mutate(Conc. = round(Conc., 2)) %>% 
+                    arrange(desc(Conc.)) %>% head(10), "latex")
+O3_tab   <- kable(O3_Region   %>% mutate(Conc. = round(Conc., 2)) %>% 
+                    arrange(desc(Conc.)) %>% head(10), "latex")
+PM25_tab <- kable(PM25_Region %>% mutate(Conc. = round(Conc., 2)) %>% 
+                    arrange(desc(Conc.)) %>% head(10), "latex")
+
+# 4.3 The Top 10 Years with Highest Concentration of Each Pollutant
+# Summarise data by determining mean of all regions/ctiies over every year
+NOX_Yearly_Mean = NOX %>% group_by(Year) %>% summarise(Conc. = round(mean(Mean), 2))
+O3_Yearly_Mean = O3 %>% group_by(Year) %>% summarise(Conc. = round(mean(Mean),2))
+PM25_Yearly_Mean = PM25 %>% group_by(Year) %>% summarise(Conc. = round(mean(Mean) ,2))
+# Display tables from datasets of the yearly mean of each respective particle
+NOX_tab  <- kable(NOX_Yearly_Mean  %>% mutate(Conc. = round(Conc., 2)) %>% 
+                    arrange(desc(Conc.)) %>% head(10), "latex")
+O3_tab   <- kable(O3_Yearly_Mean   %>% mutate(Conc. = round(Conc., 2)) %>% 
+                    arrange(desc(Conc.)) %>% head(10), "latex")
+PM25_tab <- kable(PM25_Yearly_Mean %>% mutate(Conc. = round(Conc., 2)) %>% 
+                    arrange(desc(Conc.)) %>% head(10), "latex") 
+
+# 5. Graphs
+# 5.1 Line Charts of Yearly Concentration by Region  
+# Display graphs of concentration of each respective particle over the years per region 
+plot_NOX  <- ggplot(NOX_Region, aes(x = Year, y = Conc., col = Region)) + 
+  geom_line() + 
+  facet_wrap(~ Region) + 
+  labs(title = expression(NO[x] ~ "Concentration by Region"), x = "Year", 
+       y = "Concentration (in ppb)") +
+  theme_minimal() +
+  theme(legend.position = "none", strip.text = element_blank())
+
+plot_O3 <- ggplot(O3_Region, aes(x = Year, y = Conc., col = Region)) + 
+  geom_line() + 
+  facet_wrap(~ Region) + 
+  labs(title = expression(O[3] ~ "Concentration by Region"), x = "Year", 
+       y = "Concentration (in ppb)") +
+  theme_minimal() +
+  theme(legend.position = "none", strip.text = element_blank())
+
+plot_PM25 <- ggplot(PM25_Region, aes(x = Year, y = Conc., col = Region)) + 
+  geom_line() + 
+  facet_wrap(~ Region) + 
+  labs(title = expression(PM[2.5] ~ "Concentration by Region"), x = "Year", 
+       y = expression("Concentration (in "*g/m^3 *")")) +
+  theme_minimal() +
+  theme(legend.position = "none", strip.text = element_blank())
+
+(plot_NOX | plot_O3) / plot_PM25 +
+  plot_layout(guides = "collect") & theme(legend.position = "bottom")
+
+# 5.2 Scatter Plot of Overall Pollutant Concentration by Year  
+# Store all yearly means for each respective particle
+Yearly_Means = list(NOX_Yearly_Mean, PM25_Yearly_Mean, O3_Yearly_Mean)
+# Merge all data by year
+Combined_Yearly_Mean = reduce(Yearly_Means, full_join, by = "Year")
+# Rename columns for ease of use
+Combined_Yearly_Mean = Combined_Yearly_Mean %>%
+  rename(Conc.NOX = Conc..x, Conc.PM25 = Conc..y, Conc.O3 = Conc.)
+# Reshape data into longer format
+Graphing_Yearly_Means <- Combined_Yearly_Mean %>% 
+               pivot_longer(cols = starts_with("Conc."),
+               names_to = "Pollutant",
+               values_to = "Value")
+# Graph yearly mean concentration of each particle over time
+ggplot(Graphing_Yearly_Means, 
+       aes(x = Year, y = Value, 
+           col = factor(Pollutant, 
+                        levels = c("Conc.NOX", "Conc.O3", "Conc.PM25")))) + 
+      geom_point() +
+      labs(col = "Pollutant", y = "Concentration", title = "Total Concentration by Year ") + 
+  # scale_color_discrete(labels = c(expression(NO[x] ~ "(in ppb)"), 
+      expression(O[3] ~ "(in ppb)"), expression(PM[2.5] ~ "(in " ~ g/m^3 *
+  ")"))) + theme(legend.position = "bottom")
+
+# 5.3 Heatmap of Mean Particle Concentration over all Time Accross Ontario
+group_cities <- function(data, exclude_cities){
+  grouped_data <- data %>%
+  filter(!City %in% exclude_cities) %>%  
+  # Exclude the cities from the dataset
+  bind_rows(
+    data %>%
+      # Get only the two cities we want, group their year rows, get their means and turn them into one row
+      filter(City %in% exclude_cities) %>%  
+      group_by(Year) %>%
+      # take mean of each column accross the row
+      summarise(across(where(is.numeric), ~mean(.x, na.rm = TRUE)), .groups = "drop") %>%
+      # fix the city name to be a combo of all cities
+      mutate(City = paste(exclude_cities, collapse = "-"))
+  )
+  return(grouped_data)
+}
+NOX_LL <- read_excel("./data/NOX.xlsx", skip = 3) %>% mutate(Mean = as.numeric(Mean)) %>%  
+  filter(Year >= 2003) %>% drop_na(Mean) %>% 
+  mutate(Year = as.integer(Year)) %>%
+  group_by(Year, City) %>%
+  summarise(Mean = mean(Mean, na.rm = TRUE))
+# Load Ontario shapefile
+Ontario <- st_read("data/shape") 
+Ontario <- Ontario %>% 
+  rename(City = NAME) 
+# Change CRS for Ontario
+st_crs(Ontario) <- 4326
+# Store city groupings
+subgroupings = list(c("Toronto Downtown", "Toronto East", "Toronto West", "Toronto North"), 
+                       c("Hamilton Downtown", "Hamilton West", "Hamilton Mountain"), 
+                       c("Windsor Downtown", "Windsor West"),
+                       c("Ottawa Downtown", "Ottawa Central"))
+# Define the function
+process_and_plot <- function(data, data_name) {
+  # Group subcities into one city
+  for (subgroup in subgroupings) {
+    data <- group_cities(data, subgroup)
+  }
+  # Convert city name to uppercase
+  data$City <- toupper(as.character(data$City))
+  # Join each data set with the shapefile
+  merged_data <- Ontario %>%
+    left_join(data, by = "City") %>% 
+    st_as_sf()
+  # Filter out any remote data point outliers
+  coords <- st_coordinates(merged_data)
+  merged_data <- merged_data %>%
+  mutate(max_lat = map_dbl(geometry, ~ max(st_coordinates(.x)[,2]))) %>%
+  filter(max_lat <= 47) %>%
+  select(-max_lat)
+  # Select only relevant columns in data
+  merged_data <- merged_data %>% 
+    select(Year, City, Mean, SHAPE_Area, SHAPE_Leng, geometry) 
+  # Plot
+  return( ggplot() +
+    geom_sf(data = merged_data, aes(fill = Mean)) +
+    scale_fill_viridis_c() +
+    theme_minimal() +
+    labs(
+      title = paste("Mean Value of", data_name, "Over Time"),
+      fill = "Mean Value"
+    ))
+}
+
+# Datalist
+datalist <- list(
+  list(NOX_LL, "NOX"),
+  list(O3, "O3"),
+  list(PM25, "PM25")
+)
+
+result_list <- list()  # Create an empty list
+# Loop through and call the function
+
+for (i in seq_along(datalist)) {
+  # Process each item and store the result
+  p <- process_and_plot(datalist[[i]][[1]], datalist[[i]][[2]])
+  result_list[[i]] <- p
+}
+# TODO: render the graphs side by side
+plot_grid(result_list[[1]], result_list[[2]])
+# 6. Hypothesis Testing
+# Estimating the average of the Mean NOX over year X
+# Set random seed so that results are reproduceable
+set.seed(123)
+
+# Filter datasets for only the year 2022
+NOX_2022 <- NOX %>% filter(Year == 2022) %>% select(Mean)
+O3_2022 <- O3 %>% filter(Year == 2022) %>% select(Mean)
+PM25_2022 <- PM25 %>% filter(Year == 2022) %>% select(Mean)
+
+# Bootstrap function that will repeated take samples
+boot_function <- function() {
+  boot_sample_NOX = sample_n(NOX_2022, nrow(NOX_2022), replace=T)
+  boot_sample_O3 = sample_n(O3_2022, nrow(O3_2022), replace=T)
+  boot_sample_PM25 = sample_n(PM25_2022, nrow(PM25_2022), replace=T)
+  return (c(mean(boot_sample_NOX$Mean), mean(boot_sample_O3$Mean), 
+            mean(boot_sample_PM25$Mean)))
+}
+
+# Combine all bootstrap means into a dataframe
+bootstrap_bar = as.data.frame(replicate(1000, boot_function()))
+columns = c("NO", "O2083", "PM20802085")
+for (i in 1:3) {
+  # Flatten rows of dataframe into a column vectors
+  vec = as.vector(as.matrix(bootstrap_bar[i,]))
+  # Find the 2.5% and 97.5% quantile 
+  conf = quantile(vec, c(0.025, 0.975))
+  cat("95% confidence interval for", columns[i], "is", "[", conf[1], ",", 
+      conf[2], "]", "\n")
+}
+
+# 7. Bootstrapping
+# Estimating the Average Concentration of Pollutants in 2022
+# Estimating the average of the Mean NOX over year X
+# Set random seed so that results are reproduceable
+set.seed(123)
+
+# Filter datasets for only the year 2022
+NOX_2022 <- NOX %>% filter(Year == 2022) %>% select(Mean)
+O3_2022 <- O3 %>% filter(Year == 2022) %>% select(Mean)
+PM25_2022 <- PM25 %>% filter(Year == 2022) %>% select(Mean)
+
+# Bootstrap function that will repeated take samples
+boot_function <- function() {
+  boot_sample_NOX = sample_n(NOX_2022, nrow(NOX_2022), replace=T)
+  boot_sample_O3 = sample_n(O3_2022, nrow(O3_2022), replace=T)
+  boot_sample_PM25 = sample_n(PM25_2022, nrow(PM25_2022), replace=T)
+  return (c(mean(boot_sample_NOX$Mean), mean(boot_sample_O3$Mean), mean(boot_sample_PM25$Mean)))
+}
+
+# Combine all bootstrap means into a dataframe
+bootstrap_bar = as.data.frame(replicate(1000, boot_function()))
+columns = c("NOX", "O3", "PM25")
+datasets = c(NOX_2022, O3_2022, PM25_2022)
+for (i in 1:3) {
+  # Flatten rows of dataframe into a column vectors
+  vec = as.vector(as.matrix(bootstrap_bar[i,]))
+  # Find the 2.5% and 97.5% quantile 
+  conf = quantile(vec, c(0.025, 0.975))
+  cat(i, ")", "Mean", columns[i], "concentration of:", mean(datasets[i]$Mean), ",",  
+  "95% confidence interval for", columns[i], "is", "[", conf[1], ",", conf[2], "]", "\n")
+}
+
+# 8. Regression
+# 8.1 Analyzing the Relationship Between Pollutants and Year
+NOX_other_pollutant_model = lm(formula(log(Conc.NOX)~Year + Conc.PM25 + Conc.O3),
+                               data = Combined_Yearly_Mean)
+summary(NOX_other_pollutant_model)
+# 8.2 Interpreting regression parameters: No code for this section
+# 9. Cross Validation
+set.seed(123)
+k_fold_mse = rep(0, 5)
+# Split data into 5 folds
+Combined_Yearly_Mean <- Combined_Yearly_Mean %>% 
+  mutate(group_ind = sample(c(1:5),size=nrow(Combined_Yearly_Mean), replace=TRUE))
+
+for (i in 1:5) {
+  # train on fold all fold not i then test on fold i 
+  train_set <- Combined_Yearly_Mean %>% filter(group_ind != i)
+  test_set <- Combined_Yearly_Mean %>% filter(group_ind == i)
+  NOX_other_pollutant_model = lm(formula(Conc.PM25~Year + Conc.NOX + Conc.O3), data = train_set)
+  pred = predict(NOX_other_pollutant_model, newdata=test_set)
+  # mse = mean((test_set$Conc.PM25 - pred)^2)
+  k_fold_mse[i] = mse
+}
+cat("The average MSE is:", mean(k_fold_mse), "\n")
+# 10. Summary of Research: No code for this section
+```
 
 
 
