@@ -4,7 +4,7 @@ Course: "STAA57"
 instructor: "Professor Shams"
 
 author: "Mohamad Damaj - 1010952765, Mohammad Anwar - 1010927561, Jonathan Zhu - 1010864405"
-date: "2025-03-18"
+date: "2025-04-04"
 output:
   pdf_document:
     latex_engine: xelatex
@@ -743,6 +743,9 @@ Below are the key findings from the analysis:
   
   - Extrapolating from current trends suggests that NO~x~ and PM~2.5~ concentrations will continue to decline if emission controls and cleaner technologies persist. However, O~3~ may remain relatively stable unless additional targeted measures are implemented.
   
+In the end, the statistical analysis confirms strong temporal trends and relationships between the pollutants, displaying the effectiveness of current environmental policies and the need for targeted O~3~ mitigation strategies.
+
+
   
 
 
