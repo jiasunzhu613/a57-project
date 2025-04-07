@@ -3,7 +3,7 @@ title: "Investigation of NO~x~ (in ppb), O~3~ (in ppb), and PM~2.5~ (in µg/m3) 
 Course: "STAA57"
 instructor: "Professor Shams"
 
-author: "Mohamad Damaj - 1010952765, Mohammad Anwar - 1010927561, Jonathan Zhu - 1010864405"
+author: "Mohamad Damaj, Mohammad Anwar, Jonathan Zhu"
 date: "2025-04-04"
 output:
   pdf_document:
